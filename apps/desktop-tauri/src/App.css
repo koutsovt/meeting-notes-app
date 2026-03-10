@@ -1,0 +1,334 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  background: #000;
+  color: #e0e0e0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+}
+
+/* ── Title bar ────────────────────────── */
+
+.title-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+}
+
+.app-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.version {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* ── Panel ────────────────────────────── */
+
+.panel {
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Row ──────────────────────────────── */
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.label.dim {
+  color: #555;
+}
+
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.row-actions {
+  gap: 0.4rem;
+}
+
+.mono {
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+/* ── Buttons ──────────────────────────── */
+
+.btn {
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 0.4rem 0.9rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-action {
+  background: #1a3a1a;
+  border-color: #2d5a2d;
+  color: #4caf50;
+}
+
+.btn-action:hover {
+  background: #224422;
+  border-color: #3a6e3a;
+}
+
+.btn-danger {
+  background: #3a1a1a;
+  border-color: #5a2d2d;
+  color: #f44336;
+}
+
+.btn-danger:hover {
+  background: #442222;
+  border-color: #6e3a3a;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+/* ── Select ───────────────────────────── */
+
+.select {
+  appearance: none;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #e0e0e0;
+  padding: 0.4rem 2rem 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Badges ───────────────────────────── */
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid;
+  text-transform: capitalize;
+}
+
+.badge-recording {
+  color: #4caf50;
+  border-color: #2d5a2d;
+  background: #1a3a1a;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.badge-processing {
+  color: #ff9800;
+  border-color: #5a4a2d;
+  background: #3a2a1a;
+}
+
+.badge-idle {
+  color: #666;
+  border-color: #333;
+  background: #1a1a1a;
+}
+
+.badge-done {
+  color: #4caf50;
+  border-color: #2d5a2d;
+  background: transparent;
+}
+
+.badge-granted {
+  color: #4caf50;
+  border-color: #2d5a2d;
+  background: transparent;
+}
+
+.badge-denied {
+  color: #f44336;
+  border-color: #5a2d2d;
+  background: #2a1010;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Error ────────────────────────────── */
+
+.error {
+  background: #2a1010;
+  border: 1px solid #5a2d2d;
+  color: #f44336;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+/* ── Export preview ────────────────────── */
+
+.export-content {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #aaa;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* ── Footer ───────────────────────────── */
+
+.footer {
+  margin-top: 2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1a1a1a;
+  font-size: 0.8rem;
+}
+
+.dim {
+  color: #555;
+}
+
+/* ── Live panels ─────────────────────── */
+
+.transcript-scroll {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  padding: 0.75rem;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #ccc;
+  scroll-behavior: smooth;
+}
+
+.interim {
+  color: #666;
+  font-style: italic;
+}
+
+.note-list {
+  list-style: none;
+  padding: 0;
+}
+
+.note-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.note-list li::before {
+  content: "·";
+  color: #4caf50;
+  margin-right: 0.5rem;
+  font-weight: bold;
+}
+
+.note-list li:last-child {
+  border-bottom: none;
+}
+
+/* ── Section header row ──────────────── */
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Delete button ───────────────────── */
+
+.btn-delete {
+  color: #666;
+  border-color: transparent;
+  background: transparent;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.btn-delete:hover {
+  color: #f44336;
+  background: #2a1010;
+  border-color: #5a2d2d;
+}
