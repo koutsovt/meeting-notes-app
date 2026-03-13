@@ -54,14 +54,14 @@ pub struct TranscriptionConfig {
 impl Default for TranscriptionConfig {
     fn default() -> Self {
         Self {
-            strategy: "greedy".to_string(),
+            strategy: "beam_search".to_string(),
             best_of: 5,
             n_threads: 0,
             temperature: 0.0,
             temperature_inc: 0.2,
             entropy_thold: 2.4,
             logprob_thold: -1.0,
-            no_speech_thold: 0.6,
+            no_speech_thold: 0.8,
             language: "en".to_string(),
             initial_prompt: String::new(),
             suppress_blank: true,
@@ -247,18 +247,17 @@ impl WhisperEngine {
                 0.0
             };
 
-            total_confidence += seg_confidence;
-            total_tokens += token_count;
-
+            let speaker_turn_next = segment.next_segment_speaker_turn();
             let t0 = segment.start_timestamp();
             let t1 = segment.end_timestamp();
+
+            total_confidence += seg_confidence;
+            total_tokens += token_count;
 
             if !full_text.is_empty() {
                 full_text.push(' ');
             }
             full_text.push_str(trimmed);
-
-            let speaker_turn_next = segment.next_segment_speaker_turn();
 
             segments.push(TranscriptionSegment {
                 text: trimmed.to_string(),

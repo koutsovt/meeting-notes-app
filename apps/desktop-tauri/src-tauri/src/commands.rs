@@ -87,7 +87,7 @@ fn chunk_emitter_loop(
     source: String,
 ) {
     const POLL_INTERVAL_MS: u64 = 500;
-    const CHUNK_DURATION_MS: u64 = 5000;
+    const CHUNK_DURATION_MS: u64 = 15000;
 
     loop {
         std::thread::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS));

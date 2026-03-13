@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "dev": "npm run dev --prefix apps/desktop-tauri",
+    "tauri": "npm run tauri --prefix apps/desktop-tauri",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -57,7 +57,12 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
         const pending = pendingTranscriptions.get(meeting.id)
         const promise = deps.transcription
           .transcribeChunk(audioChunk)
+          .catch((err) => {
+            console.error("[orchestrator] transcribeChunk failed:", err)
+            return null
+          })
           .then((transcriptChunk) => {
+            if (!transcriptChunk) return
             chunkBuffers.get(meeting.id)?.push(transcriptChunk)
             deps.onTranscriptUpdate?.(transcriptChunk)
 

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 const SCK_SAMPLE_RATE: u32 = 48000;
 const SCK_CHANNEL_COUNT: u32 = 2;
-const CHUNK_DURATION_SECS: f64 = 5.0;
+const CHUNK_DURATION_SECS: f64 = 15.0;
 
 /// Accumulated PCM samples from ScreenCaptureKit callbacks.
 /// SCK delivers audio asynchronously; we buffer until a 5-second chunk is ready.
@@ -104,20 +104,44 @@ pub fn start_system_capture(
             }
 
             if let Some(audio_list) = sample.audio_buffer_list() {
+                // SCK may deliver non-interleaved (planar) buffers:
+                // buffer 0 = left channel, buffer 1 = right channel
+                // Collect all channel buffers and interleave them
+                let mut channel_bufs: Vec<Vec<f32>> = Vec::new();
                 for buf_ref in &audio_list {
                     let bytes = buf_ref.data();
                     if bytes.is_empty() {
                         continue;
                     }
-                    // SCK delivers f32 PCM interleaved
-                    let samples: Vec<f32> = bytes
+                    let ch_samples: Vec<f32> = bytes
                         .chunks_exact(4)
                         .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
                         .collect();
+                    channel_bufs.push(ch_samples);
+                }
 
-                    if let Ok(mut guard) = acc.lock() {
-                        guard.push_samples(&samples);
+                if channel_bufs.is_empty() {
+                    return;
+                }
+
+                let samples = if channel_bufs.len() == 1 {
+                    // Single buffer — already interleaved or mono
+                    channel_bufs.into_iter().next().unwrap()
+                } else {
+                    // Planar: interleave channels for downstream stereo_to_mono
+                    let frame_count = channel_bufs[0].len();
+                    let ch_count = channel_bufs.len();
+                    let mut interleaved = Vec::with_capacity(frame_count * ch_count);
+                    for i in 0..frame_count {
+                        for ch in &channel_bufs {
+                            interleaved.push(if i < ch.len() { ch[i] } else { 0.0 });
+                        }
                     }
+                    interleaved
+                };
+
+                if let Ok(mut guard) = acc.lock() {
+                    guard.push_samples(&samples);
                 }
             }
         },

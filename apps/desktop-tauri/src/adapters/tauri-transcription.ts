@@ -72,11 +72,48 @@ export function createTauriTranscriptionService(): TranscriptionService {
         samplesBase64: preparedBase64,
       })
 
+      // Detect speaker turns from:
+      // 1. tinydiarize flag
+      // 2. timestamp gap > 800ms between segments
+      // 3. whisper dash prefix ("- text") which indicates a new speaker
+      let text = ""
+      let currentSpeaker = 0
+      if (result.segments.length > 0) {
+        text = `[Speaker ${currentSpeaker + 1}]: `
+        for (let si = 0; si < result.segments.length; si++) {
+          const seg = result.segments[si]
+          let segText = seg.text.trim()
+
+          // Whisper inserts "- " prefix for speaker changes
+          const hasDashPrefix = segText.startsWith("- ") || segText.startsWith("−")
+          if (hasDashPrefix) {
+            if (si > 0) {
+              currentSpeaker++
+            }
+            text += si > 0 ? `\n[Speaker ${currentSpeaker + 1}]: ` : ""
+            segText = segText.replace(/^[-−]\s*/, "")
+          }
+
+          text += segText
+
+          // Check for speaker turn: tinydiarize flag, gap, or short interjection pattern
+          const nextSeg = result.segments[si + 1]
+          const hasGap = nextSeg && (nextSeg.start_ms - seg.end_ms) > 800
+          const segDuration = seg.end_ms - seg.start_ms
+          const isShortInterjection = segDuration < 2000 && nextSeg && (nextSeg.end_ms - nextSeg.start_ms) > 3000
+          if (seg.speaker_turn_next || hasGap || isShortInterjection) {
+            currentSpeaker++
+            text += `\n[Speaker ${currentSpeaker + 1}]: `
+          }
+        }
+        text = text.trim()
+      }
+
       return {
         id: uuid(),
         meetingId: chunk.meetingId,
         sequence: chunk.sequence,
-        text: result.text || "(no speech detected)",
+        text: text || "(no speech detected)",
         startTimeMs: chunk.startTimeMs,
         endTimeMs: chunk.endTimeMs,
         confidence: result.confidence,

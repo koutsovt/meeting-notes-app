@@ -5,6 +5,8 @@ import { createMemoryStorageService } from "./storage-memory.js"
 import { createSpeechBuffer } from "./adapters/speech-buffer.js"
 import { createWebCaptureService } from "./adapters/web-capture.js"
 import { createWebTranscriptionService } from "./adapters/web-transcription.js"
+import { createTauriCaptureService } from "./adapters/tauri-capture.js"
+import { createTauriTranscriptionService } from "./adapters/tauri-transcription.js"
 import type { Orchestrator } from "./orchestrator/index.js"
 import type { StorageService } from "@shared/services/storage-service.js"
 import type { TranscriptChunk } from "@shared/types/transcript.js"
@@ -18,21 +20,32 @@ export interface App {
   onInterimText: ((text: string) => void) | null
 }
 
+export function isTauri(): boolean {
+  return typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+}
+
 /**
  * Request microphone permission and return the MediaStream.
- * Must be called before createApp.
+ * Only needed in browser mode — Tauri uses ScreenCaptureKit.
  */
-export async function requestMicPermission(): Promise<MediaStream> {
+export async function requestMicPermission(): Promise<MediaStream | null> {
+  if (isTauri()) return null
   return navigator.mediaDevices.getUserMedia({ audio: true })
 }
 
 /**
- * Create the app with real browser services.
- * Requires a pre-acquired MediaStream (mic already granted).
+ * Load the whisper model in Tauri mode.
  */
-export function createApp(micStream: MediaStream): App {
+async function loadWhisperModel(): Promise<void> {
+  const { invoke } = await import("@tauri-apps/api/core")
+  await invoke("load_model", { model: "small.en" })
+}
+
+/**
+ * Create the app with appropriate services based on runtime environment.
+ */
+export async function createApp(micStream: MediaStream | null): Promise<App> {
   const storage = createMemoryStorageService()
-  const speechBuffer = createSpeechBuffer()
 
   const app: App = {
     orchestrator: null!,
@@ -42,17 +55,32 @@ export function createApp(micStream: MediaStream): App {
     onInterimText: null,
   }
 
-  speechBuffer.onInterim = (text) => app.onInterimText?.(text)
+  if (isTauri()) {
+    await loadWhisperModel()
 
-  app.orchestrator = createOrchestrator({
-    capture: createWebCaptureService(micStream, speechBuffer),
-    transcription: createWebTranscriptionService(speechBuffer),
-    intelligence: createIntelligenceService(),
-    storage,
-    export: createExportService(),
-    onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
-    onLiveNote: (note) => app.onLiveNote?.(note),
-  })
+    app.orchestrator = createOrchestrator({
+      capture: createTauriCaptureService(),
+      transcription: createTauriTranscriptionService(),
+      intelligence: createIntelligenceService(),
+      storage,
+      export: createExportService(),
+      onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
+      onLiveNote: (note) => app.onLiveNote?.(note),
+    })
+  } else {
+    const speechBuffer = createSpeechBuffer()
+    speechBuffer.onInterim = (text) => app.onInterimText?.(text)
+
+    app.orchestrator = createOrchestrator({
+      capture: createWebCaptureService(micStream!, speechBuffer),
+      transcription: createWebTranscriptionService(speechBuffer),
+      intelligence: createIntelligenceService(),
+      storage,
+      export: createExportService(),
+      onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
+      onLiveNote: (note) => app.onLiveNote?.(note),
+    })
+  }
 
   return app
 }

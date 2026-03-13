@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { createApp, requestMicPermission } from "./create-app.js"
+import { createApp, requestMicPermission, isTauri } from "./create-app.js"
 import type { App as AppInstance } from "./create-app.js"
 import type { Meeting } from "@shared/types/meeting.js"
 import type { ExportResult } from "@shared/types/export.js"
@@ -15,15 +15,20 @@ export function App() {
   const appRef = useRef<AppInstance | null>(null)
 
   useEffect(() => {
-    requestMicPermission()
-      .then((stream) => {
-        appRef.current = createApp(stream)
+    async function init() {
+      try {
+        const stream = await requestMicPermission()
+        const app = await createApp(stream)
+        appRef.current = app
         setAppState("ready")
-      })
-      .catch((err) => {
-        setPermissionError(err.message)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error("App init failed:", msg)
+        setPermissionError(msg)
         setAppState("denied")
-      })
+      }
+    }
+    init()
   }, [])
 
   if (appState === "requesting") {
@@ -52,12 +57,12 @@ export function App() {
         </header>
         <div className="panel">
           <div className="row">
-            <span className="label">Microphone</span>
-            <span className="badge badge-denied">Denied</span>
+            <span className="label">{isTauri() ? "Setup" : "Microphone"}</span>
+            <span className="badge badge-denied">Error</span>
           </div>
         </div>
         <p className="error">
-          Microphone access is required. {permissionError}
+          {permissionError}
         </p>
       </div>
     )
@@ -83,7 +88,7 @@ function LiveTranscript({ chunks, interim }: { chunks: TranscriptChunk[]; interi
           <span className="dim">Listening...</span>
         ) : (
           <>
-            {chunks.map((c) => <span key={c.id}>{c.text} </span>)}
+            {chunks.map((c) => <pre key={c.id} style={{ margin: 0, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{c.text}</pre>)}
             {interim && <span className="interim">{interim}</span>}
           </>
         )}
@@ -309,7 +314,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
         <div className="row">
           <span className="label">Transcription</span>
           <div className="row-right">
-            <span className="mono">Web Speech API</span>
+            <span className="mono">{isTauri() ? "whisper.cpp (native)" : "Web Speech API"}</span>
           </div>
         </div>
 
@@ -355,7 +360,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
       {exportResult && <ExportPreview result={exportResult} onDownload={handleDownload} />}
 
       <footer className="footer">
-        <span className="dim">Model: Web Speech API (browser-native)</span>
+        <span className="dim">{isTauri() ? "Model: whisper.cpp small.en (Metal GPU)" : "Model: Web Speech API (browser-native)"}</span>
       </footer>
     </div>
   )
