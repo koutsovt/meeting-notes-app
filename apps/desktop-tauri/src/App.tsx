@@ -173,6 +173,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
   const [currentModel, setCurrentModel] = useState("small.en")
   const [modelLoading, setModelLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isRecording = activeMeeting !== null
 
   const refreshMeetings = useCallback(() => {
     setMeetings(app.storage.listMeetings())
@@ -294,8 +295,6 @@ function MeetingUI({ app }: { app: AppInstance }) {
     const sec = s % 60
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
   }
-
-  const isRecording = activeMeeting !== null
 
   return (
     <div className="app">
