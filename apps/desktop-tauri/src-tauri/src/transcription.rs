@@ -87,6 +87,8 @@ pub struct TranscriptionSegment {
     pub confidence: f32,
     pub no_speech_prob: f32,
     pub speaker_turn_next: bool,
+    /// True if there's a silence gap (low energy) between this segment and the next
+    pub silence_before_next: bool,
 }
 
 /// Managed whisper.cpp context.
@@ -250,7 +252,6 @@ impl WhisperEngine {
             let speaker_turn_next = segment.next_segment_speaker_turn();
             let t0 = segment.start_timestamp();
             let t1 = segment.end_timestamp();
-
             total_confidence += seg_confidence;
             total_tokens += token_count;
 
@@ -266,7 +267,54 @@ impl WhisperEngine {
                 confidence: avg_confidence,
                 no_speech_prob,
                 speaker_turn_next,
+                silence_before_next: false, // filled in below
             });
+        }
+
+        // Scan the entire audio for silence regions (>300ms of low energy),
+        // then mark any segment boundary that falls near a silence region.
+        let sample_rate = 16000usize;
+        let frame_size = sample_rate / 50; // 20ms frames
+        let silence_thresh = 0.01f32;
+        let min_silence_frames = 15; // 300ms = 15 frames of 20ms
+
+        // Find silence regions
+        let mut silence_regions: Vec<(usize, usize)> = Vec::new(); // (start_ms, end_ms)
+        let mut silent_count = 0usize;
+        let mut silence_start = 0usize;
+
+        let total_frames = audio_16k_mono.len() / frame_size;
+        for f in 0..total_frames {
+            let start = f * frame_size;
+            let end = (start + frame_size).min(audio_16k_mono.len());
+            let frame = &audio_16k_mono[start..end];
+            let rms = (frame.iter().map(|s| s * s).sum::<f32>() / frame.len() as f32).sqrt();
+
+            if rms < silence_thresh {
+                if silent_count == 0 {
+                    silence_start = f;
+                }
+                silent_count += 1;
+            } else {
+                if silent_count >= min_silence_frames {
+                    let start_ms = silence_start * 20;
+                    let end_ms = f * 20;
+                    silence_regions.push((start_ms, end_ms));
+                }
+                silent_count = 0;
+            }
+        }
+
+        // Mark segments whose boundary falls within or near a silence region
+        for i in 0..segments.len().saturating_sub(1) {
+            let boundary_ms = segments[i].end_ms as usize;
+            for (s_start, s_end) in &silence_regions {
+                // Boundary within 500ms of a silence region
+                if boundary_ms + 500 >= *s_start && boundary_ms <= *s_end + 500 {
+                    segments[i].silence_before_next = true;
+                    break;
+                }
+            }
         }
 
         let overall_confidence = if total_tokens > 0 {

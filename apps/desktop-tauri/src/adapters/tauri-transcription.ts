@@ -7,7 +7,7 @@ import type { TranscriptChunk, Transcript } from "@shared/types/transcript.js"
 interface RustTranscriptionResult {
   text: string
   confidence: number
-  segments: { text: string; start_ms: number; end_ms: number; confidence: number; no_speech_prob: number; speaker_turn_next: boolean }[]
+  segments: { text: string; start_ms: number; end_ms: number; confidence: number; no_speech_prob: number; speaker_turn_next: boolean; silence_before_next: boolean }[]
 }
 
 export interface TranscriptionConfig {
@@ -72,10 +72,7 @@ export function createTauriTranscriptionService(): TranscriptionService {
         samplesBase64: preparedBase64,
       })
 
-      // Detect speaker turns from:
-      // 1. tinydiarize flag
-      // 2. timestamp gap > 800ms between segments
-      // 3. whisper dash prefix ("- text") which indicates a new speaker
+      // Detect speaker turns from multiple signals
       let text = ""
       let currentSpeaker = 0
       if (result.segments.length > 0) {
@@ -84,24 +81,28 @@ export function createTauriTranscriptionService(): TranscriptionService {
           const seg = result.segments[si]
           let segText = seg.text.trim()
 
-          // Whisper inserts "- " prefix for speaker changes
+          // Signal 1: Whisper dash prefix ("- text") indicates speaker change
           const hasDashPrefix = segText.startsWith("- ") || segText.startsWith("−")
           if (hasDashPrefix) {
             if (si > 0) {
               currentSpeaker++
+              text += `\n[Speaker ${currentSpeaker + 1}]: `
             }
-            text += si > 0 ? `\n[Speaker ${currentSpeaker + 1}]: ` : ""
             segText = segText.replace(/^[-−]\s*/, "")
           }
 
+          // Add space between segments from the same speaker
+          if (si > 0 && !text.endsWith(": ") && !text.endsWith("\n")) {
+            text += " "
+          }
           text += segText
 
-          // Check for speaker turn: tinydiarize flag, gap, or short interjection pattern
           const nextSeg = result.segments[si + 1]
-          const hasGap = nextSeg && (nextSeg.start_ms - seg.end_ms) > 800
-          const segDuration = seg.end_ms - seg.start_ms
-          const isShortInterjection = segDuration < 2000 && nextSeg && (nextSeg.end_ms - nextSeg.start_ms) > 3000
-          if (seg.speaker_turn_next || hasGap || isShortInterjection) {
+          if (!nextSeg) continue
+
+          // Only use silence_before_next as the primary speaker change signal
+          // tinydiarize and dash prefix are secondary
+          if (seg.speaker_turn_next || seg.silence_before_next) {
             currentSpeaker++
             text += `\n[Speaker ${currentSpeaker + 1}]: `
           }
