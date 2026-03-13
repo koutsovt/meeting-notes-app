@@ -36,9 +36,9 @@ export async function requestMicPermission(): Promise<MediaStream | null> {
 /**
  * Load the whisper model in Tauri mode.
  */
-async function loadWhisperModel(): Promise<void> {
+export async function loadWhisperModel(model: string = "small.en"): Promise<void> {
   const { invoke } = await import("@tauri-apps/api/core")
-  await invoke("load_model", { model: "small.en" })
+  await invoke("load_model", { model })
 }
 
 /**

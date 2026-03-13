@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { createApp, requestMicPermission, isTauri } from "./create-app.js"
+import { createApp, requestMicPermission, isTauri, loadWhisperModel } from "./create-app.js"
 import type { App as AppInstance } from "./create-app.js"
 import type { Meeting } from "@shared/types/meeting.js"
 import type { ExportResult } from "@shared/types/export.js"
@@ -170,6 +170,8 @@ function MeetingUI({ app }: { app: AppInstance }) {
   const [liveChunks, setLiveChunks] = useState<TranscriptChunk[]>([])
   const [liveNotes, setLiveNotes] = useState<LiveNote[]>([])
   const [interimText, setInterimText] = useState("")
+  const [currentModel, setCurrentModel] = useState("small.en")
+  const [modelLoading, setModelLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refreshMeetings = useCallback(() => {
@@ -208,6 +210,20 @@ function MeetingUI({ app }: { app: AppInstance }) {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [activeMeeting])
+
+  const handleModelChange = useCallback(async (model: string) => {
+    if (!isTauri() || isRecording || modelLoading) return
+    try {
+      setModelLoading(true)
+      setError(null)
+      await loadWhisperModel(model)
+      setCurrentModel(model)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setModelLoading(false)
+    }
+  }, [isRecording, modelLoading])
 
   const handleStart = useCallback(() => {
     try {
@@ -312,9 +328,23 @@ function MeetingUI({ app }: { app: AppInstance }) {
         </div>
 
         <div className="row">
-          <span className="label">Transcription</span>
+          <span className="label">Model</span>
           <div className="row-right">
-            <span className="mono">{isTauri() ? "whisper.cpp (native)" : "Web Speech API"}</span>
+            {isTauri() ? (
+              <select
+                value={currentModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+                disabled={isRecording || modelLoading}
+                className="model-select"
+              >
+                <option value="tiny.en">tiny.en (75 MB)</option>
+                <option value="base.en">base.en (142 MB)</option>
+                <option value="small.en">small.en (466 MB)</option>
+              </select>
+            ) : (
+              <span className="mono">Web Speech API</span>
+            )}
+            {modelLoading && <span className="badge badge-processing">Loading...</span>}
           </div>
         </div>
 
@@ -360,7 +390,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
       {exportResult && <ExportPreview result={exportResult} onDownload={handleDownload} />}
 
       <footer className="footer">
-        <span className="dim">{isTauri() ? "Model: whisper.cpp small.en (Metal GPU)" : "Model: Web Speech API (browser-native)"}</span>
+        <span className="dim">{isTauri() ? `whisper.cpp ${currentModel} · Metal GPU` : "Web Speech API (browser-native)"}</span>
       </footer>
     </div>
   )

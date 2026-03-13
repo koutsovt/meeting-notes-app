@@ -98,6 +98,21 @@ body {
 
 /* ── Buttons ──────────────────────────── */
 
+.model-select {
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+
+.model-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn {
   border: 1px solid #333;
   border-radius: 6px;
