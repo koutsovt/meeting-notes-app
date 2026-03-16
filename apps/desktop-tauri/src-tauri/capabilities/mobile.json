@@ -14,14 +14,6 @@
     "audio-recorder:allow-get-status",
     "audio-recorder:allow-get-devices",
     "audio-recorder:allow-request-permission",
-    "audio-recorder:allow-check-permission",
-    "stt:allow-is-available",
-    "stt:allow-check-permission",
-    "stt:allow-request-permission",
-    "stt:allow-start-listening",
-    "stt:allow-stop-listening",
-    "stt:allow-register-listener",
-    "stt:allow-remove-listener",
-    "stt:allow-get-supported-languages"
+    "audio-recorder:allow-check-permission"
   ]
 }

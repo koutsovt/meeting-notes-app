@@ -80,6 +80,9 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
                   deps.storage.saveLiveNote(note)
                   deps.onLiveNote?.(note)
                 })
+                .catch((err) => {
+                  console.error("[orchestrator] generateLiveNote failed:", err)
+                })
             }
           })
         pending?.push(promise)
