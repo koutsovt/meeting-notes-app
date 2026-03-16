@@ -7,6 +7,9 @@ import { createWebCaptureService } from "./adapters/web-capture.js"
 import { createWebTranscriptionService } from "./adapters/web-transcription.js"
 import { createTauriCaptureService } from "./adapters/tauri-capture.js"
 import { createTauriTranscriptionService } from "./adapters/tauri-transcription.js"
+import { createMobileCaptureService } from "./adapters/mobile-capture.js"
+import { createMobileTranscriptionService } from "./adapters/mobile-transcription.js"
+import { detectPlatform } from "./platform/detect.js"
 import type { Orchestrator } from "./orchestrator/index.js"
 import type { StorageService } from "@shared/services/storage-service.js"
 import type { TranscriptChunk } from "@shared/types/transcript.js"
@@ -26,7 +29,7 @@ export function isTauri(): boolean {
 
 /**
  * Request microphone permission and return the MediaStream.
- * Only needed in browser mode — Tauri uses ScreenCaptureKit.
+ * Only needed in browser mode — Tauri uses ScreenCaptureKit or mobile plugin.
  */
 export async function requestMicPermission(): Promise<MediaStream | null> {
   if (isTauri()) return null
@@ -34,7 +37,7 @@ export async function requestMicPermission(): Promise<MediaStream | null> {
 }
 
 /**
- * Load the whisper model in Tauri mode.
+ * Load the whisper model in Tauri mode (desktop only).
  */
 export async function loadWhisperModel(model: string = "small.en"): Promise<void> {
   const { invoke } = await import("@tauri-apps/api/core")
@@ -43,9 +46,11 @@ export async function loadWhisperModel(model: string = "small.en"): Promise<void
 
 /**
  * Create the app with appropriate services based on runtime environment.
+ * Supports three modes: desktop (macOS), mobile (iOS/Android), browser (dev).
  */
 export async function createApp(micStream: MediaStream | null): Promise<App> {
   const storage = createMemoryStorageService()
+  const platform = detectPlatform()
 
   const app: App = {
     orchestrator: null!,
@@ -55,7 +60,35 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
     onInterimText: null,
   }
 
-  if (isTauri()) {
+  if (platform === "ios" || platform === "android") {
+    // Mobile: timer-based capture + webkitSpeechRecognition
+    // Uses iOS WKWebView's built-in SFSpeechRecognizer wrapper
+    const speechBuffer = createSpeechBuffer()
+    speechBuffer.onInterim = (text) => app.onInterimText?.(text)
+
+    const mobileCapture = createMobileCaptureService()
+    const originalStart = mobileCapture.start.bind(mobileCapture)
+    const originalStop = mobileCapture.stop.bind(mobileCapture)
+    mobileCapture.start = (id, onChunk) => {
+      speechBuffer.start()
+      originalStart(id, onChunk)
+    }
+    mobileCapture.stop = () => {
+      originalStop()
+      speechBuffer.stop()
+    }
+
+    app.orchestrator = createOrchestrator({
+      capture: mobileCapture,
+      transcription: createWebTranscriptionService(speechBuffer),
+      intelligence: createIntelligenceService(),
+      storage,
+      export: createExportService(),
+      onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
+      onLiveNote: (note) => app.onLiveNote?.(note),
+    })
+  } else if (platform === "macos") {
+    // Desktop: ScreenCaptureKit + Whisper
     await loadWhisperModel()
 
     app.orchestrator = createOrchestrator({
@@ -68,6 +101,7 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
       onLiveNote: (note) => app.onLiveNote?.(note),
     })
   } else {
+    // Browser dev mode: Web Speech API
     const speechBuffer = createSpeechBuffer()
     speechBuffer.onInterim = (text) => app.onInterimText?.(text)
 

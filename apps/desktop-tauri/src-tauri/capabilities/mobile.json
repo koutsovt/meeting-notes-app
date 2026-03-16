@@ -1,0 +1,27 @@
+{
+  "identifier": "mobile",
+  "description": "Capabilities for mobile (iOS/Android)",
+  "platforms": ["android", "iOS"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "audio-recorder:allow-start-recording",
+    "audio-recorder:allow-stop-recording",
+    "audio-recorder:allow-pause-recording",
+    "audio-recorder:allow-resume-recording",
+    "audio-recorder:allow-get-status",
+    "audio-recorder:allow-get-devices",
+    "audio-recorder:allow-request-permission",
+    "audio-recorder:allow-check-permission",
+    "stt:allow-is-available",
+    "stt:allow-check-permission",
+    "stt:allow-request-permission",
+    "stt:allow-start-listening",
+    "stt:allow-stop-listening",
+    "stt:allow-register-listener",
+    "stt:allow-remove-listener",
+    "stt:allow-get-supported-languages"
+  ]
+}

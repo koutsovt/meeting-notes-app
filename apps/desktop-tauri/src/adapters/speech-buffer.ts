@@ -2,6 +2,9 @@
  * Shared speech recognition buffer.
  * Runs the Web Speech API and buffers recognized text with timestamps.
  * Capture starts/stops it; transcription reads from it.
+ *
+ * iOS WKWebView: webkitSpeechRecognition is supported but stops frequently.
+ * This implementation creates fresh instances on restart for reliability.
  */
 
 interface BufferedResult {
@@ -43,6 +46,73 @@ export function createSpeechBuffer(): SpeechBuffer {
     }
   }
 
+  function wireRecognition(rec: SpeechRecognition): void {
+    rec.continuous = true
+    rec.interimResults = true
+    rec.lang = "en-US"
+
+    rec.onresult = (event: SpeechRecognitionEvent) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript.trim()
+        const confidence = event.results[i][0].confidence
+
+        if (event.results[i].isFinal) {
+          interimText = ""
+          if (text) {
+            buffer.push({
+              text,
+              timestampMs: Date.now() - startEpochMs,
+              confidence,
+            })
+          }
+        } else {
+          interimText = text
+          sb.onInterim?.(text)
+        }
+      }
+    }
+
+    rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === "no-speech" || event.error === "aborted") return
+      // On iOS, errors can stop recognition — schedule restart
+      if (running) {
+        setTimeout(() => { if (running) restartRecognition() }, 300)
+      }
+    }
+
+    rec.onend = () => {
+      flushInterim()
+      // iOS WKWebView stops recognition frequently — always restart
+      if (running) {
+        setTimeout(() => { if (running) restartRecognition() }, 100)
+      }
+    }
+  }
+
+  function restartRecognition(): void {
+    if (recognition) {
+      try {
+        recognition.onend = null
+        recognition.onerror = null
+        recognition.stop()
+      } catch {
+        // ignore
+      }
+      recognition = null
+    }
+
+    recognition = getSpeechRecognition()
+    if (!recognition) return
+
+    wireRecognition(recognition)
+
+    try {
+      recognition.start()
+    } catch {
+      setTimeout(() => { if (running) restartRecognition() }, 500)
+    }
+  }
+
   const sb: SpeechBuffer = {
     onInterim: null,
 
@@ -50,7 +120,6 @@ export function createSpeechBuffer(): SpeechBuffer {
       if (running) return
       buffer = []
       startEpochMs = Date.now()
-
       running = true
 
       recognition = getSpeechRecognition()
@@ -59,44 +128,7 @@ export function createSpeechBuffer(): SpeechBuffer {
         return
       }
 
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.lang = "en-US"
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const text = event.results[i][0].transcript.trim()
-          const confidence = event.results[i][0].confidence
-
-          if (event.results[i].isFinal) {
-            interimText = ""
-            if (text) {
-              buffer.push({
-                text,
-                timestampMs: Date.now() - startEpochMs,
-                confidence,
-              })
-            }
-          } else {
-            interimText = text
-            sb.onInterim?.(text)
-          }
-        }
-      }
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === "no-speech") return
-        console.warn("SpeechRecognition error:", event.error)
-      }
-
-      recognition.onend = () => {
-        // Flush any pending interim text before restart to avoid gaps
-        flushInterim()
-        if (running && recognition) {
-          recognition.start()
-        }
-      }
-
+      wireRecognition(recognition)
       recognition.start()
     },
 
@@ -105,6 +137,7 @@ export function createSpeechBuffer(): SpeechBuffer {
       flushInterim()
       if (recognition) {
         recognition.onend = null
+        recognition.onerror = null
         recognition.stop()
         recognition = null
       }

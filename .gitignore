@@ -3,3 +3,8 @@ dist/
 target/
 *.log
 .DS_Store
+
+# iOS build artifacts
+apps/desktop-tauri/src-tauri/gen/apple/build/
+apps/desktop-tauri/src-tauri/gen/apple/Externals/
+apps/desktop-tauri/src-tauri/gen/apple/Pods/
