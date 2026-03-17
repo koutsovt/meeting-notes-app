@@ -406,8 +406,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
                       if (val) {
                         await setApiKey(val)
                         setApiKeyState(val)
-                        // Delay reload to ensure key is persisted
-                        setTimeout(() => window.location.reload(), 300)
+                        setError("API key saved — restart app to activate AI summaries")
                       }
                     }
                   }}
