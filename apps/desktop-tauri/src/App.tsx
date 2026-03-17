@@ -385,27 +385,33 @@ function MeetingUI({ app }: { app: AppInstance }) {
           <span className="label">AI Summary</span>
           <div className="row-right">
             {hasAI ? (
-              <span className="badge badge-granted" onClick={async () => {
-                await setApiKey("")
-                setApiKeyState("")
-                window.location.reload()
-              }}>GLM ✓</span>
+              <>
+                <span className="badge badge-granted">Active</span>
+                <button className="btn btn-sm btn-delete" style={{ marginLeft: 4 }} onClick={async () => {
+                  await setApiKey("")
+                  setApiKeyState("")
+                  window.location.reload()
+                }}>×</button>
+              </>
             ) : (
-              <input
-                type="password"
-                placeholder="GLM API key"
-                style={{ fontSize: 12, padding: "2px 6px", width: 160 }}
-                onKeyDown={async (e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value.trim()
-                    if (val) {
-                      await setApiKey(val)
-                      setApiKeyState(val)
-                      window.location.reload()
+              <>
+                <span className="badge badge-denied" style={{ marginRight: 6 }}>Key required</span>
+                <input
+                  type="password"
+                  placeholder="Enter API key"
+                  style={{ fontSize: 12, padding: "2px 6px", width: 130 }}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value.trim()
+                      if (val) {
+                        await setApiKey(val)
+                        setApiKeyState(val)
+                        window.location.reload()
+                      }
                     }
-                  }
-                }}
-              />
+                  }}
+                />
+              </>
             )}
           </div>
         </div>
