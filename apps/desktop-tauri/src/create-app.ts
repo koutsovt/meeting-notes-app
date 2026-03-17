@@ -25,17 +25,24 @@ export interface App {
 const KEYCHAIN_KEY = "meeting-notes-ai-api-key"
 
 export async function getApiKey(): Promise<string> {
+  // Try keychain first, then localStorage
   try {
     const { getItem } = await import("tauri-plugin-keychain")
     const key = await getItem(KEYCHAIN_KEY)
-    return key ?? ""
+    if (key) return key
   } catch {
-    // Fallback to localStorage when keychain unavailable (browser dev)
-    return localStorage.getItem(KEYCHAIN_KEY) ?? ""
+    // Keychain unavailable
   }
+  return localStorage.getItem(KEYCHAIN_KEY) ?? ""
 }
 
 export async function setApiKey(key: string): Promise<void> {
+  // Save to both keychain and localStorage for reliability
+  if (key) {
+    localStorage.setItem(KEYCHAIN_KEY, key)
+  } else {
+    localStorage.removeItem(KEYCHAIN_KEY)
+  }
   try {
     const { saveItem, removeItem } = await import("tauri-plugin-keychain")
     if (key) {
@@ -44,12 +51,7 @@ export async function setApiKey(key: string): Promise<void> {
       await removeItem(KEYCHAIN_KEY)
     }
   } catch {
-    // Fallback to localStorage when keychain unavailable (browser dev)
-    if (key) {
-      localStorage.setItem(KEYCHAIN_KEY, key)
-    } else {
-      localStorage.removeItem(KEYCHAIN_KEY)
-    }
+    // Keychain unavailable — localStorage is the fallback
   }
 }
 

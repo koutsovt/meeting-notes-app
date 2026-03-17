@@ -390,7 +390,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
                 <button className="btn btn-sm btn-delete" style={{ marginLeft: 4 }} onClick={async () => {
                   await setApiKey("")
                   setApiKeyState("")
-                  window.location.reload()
+                  setTimeout(() => window.location.reload(), 100)
                 }}>×</button>
               </>
             ) : (
@@ -406,7 +406,8 @@ function MeetingUI({ app }: { app: AppInstance }) {
                       if (val) {
                         await setApiKey(val)
                         setApiKeyState(val)
-                        window.location.reload()
+                        // Delay reload to ensure key is persisted
+                        setTimeout(() => window.location.reload(), 300)
                       }
                     }
                   }}
