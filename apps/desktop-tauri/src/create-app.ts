@@ -81,8 +81,7 @@ export async function loadWhisperModel(model: string = "small.en"): Promise<void
 export async function createApp(micStream: MediaStream | null): Promise<App> {
   const storage = createMemoryStorageService()
   const platform = detectPlatform()
-  let apiKey = await getApiKey()
-  if (!apiKey) apiKey = "12351402e4634505b7b94ea9a2593614.WAj5qHze8UJqrcYz"
+  const apiKey = await getApiKey()
   console.log("[app] API key loaded:", apiKey ? `${apiKey.substring(0, 8)}...` : "(none)")
   const backend = apiKey ? createAIBackend(apiKey) : undefined
   console.log("[app] AI backend:", backend ? "GLM" : "keyword-only")
