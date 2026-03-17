@@ -395,22 +395,21 @@ function MeetingUI({ app }: { app: AppInstance }) {
               </>
             ) : (
               <>
-                <span className="badge badge-denied" style={{ marginRight: 6 }}>Key required</span>
                 <input
+                  id="api-key-input"
                   type="password"
-                  placeholder="Enter API key"
-                  style={{ fontSize: 12, padding: "2px 6px", width: 130 }}
-                  onKeyDown={async (e) => {
-                    if (e.key === "Enter") {
-                      const val = (e.target as HTMLInputElement).value.trim()
-                      if (val) {
-                        await setApiKey(val)
-                        setApiKeyState(val)
-                        setError("API key saved — restart app to activate AI summaries")
-                      }
-                    }
-                  }}
+                  placeholder="API key"
+                  style={{ fontSize: 12, padding: "4px 6px", width: 120 }}
                 />
+                <button className="btn btn-sm" style={{ marginLeft: 4 }} onClick={async () => {
+                  const input = document.getElementById("api-key-input") as HTMLInputElement
+                  const val = input?.value?.trim()
+                  if (val) {
+                    await setApiKey(val)
+                    setApiKeyState(val)
+                    setError("API key saved — restart app to activate AI summaries")
+                  }
+                }}>Save</button>
               </>
             )}
           </div>
