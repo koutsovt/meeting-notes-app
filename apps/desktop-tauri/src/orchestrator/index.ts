@@ -13,11 +13,12 @@ import type { LiveNote } from "@shared/types/summary.js"
 
 export interface OrchestratorDeps {
   capture: CaptureService
-  transcription: TranscriptionService
+  transcription?: TranscriptionService
   intelligence: IntelligenceService
   storage: StorageService
   export: ExportService
   diarization?: DiarizationService
+  onBeforeAssemble?: () => Promise<void>
   onTranscriptUpdate?: (chunk: TranscriptChunk) => void
   onLiveNote?: (note: LiveNote) => void
 }
@@ -54,6 +55,8 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
       lastLiveNotes.set(meeting.id, null)
 
       deps.capture.start(meeting.id, (audioChunk: AudioChunk) => {
+        if (!deps.transcription) return
+
         const pending = pendingTranscriptions.get(meeting.id)
         const promise = deps.transcription
           .transcribeChunk(audioChunk)
@@ -104,31 +107,55 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
       meeting.endedAt = new Date().toISOString()
       deps.storage.updateMeeting(meeting)
 
-      let chunks = chunkBuffers.get(meetingId) ?? []
-
-      if (deps.diarization) {
-        const result = await deps.diarization.assignSpeakers(meetingId, chunks)
-        chunks = result.chunks
-        deps.storage.saveSpeakers(meetingId, result.speakers)
+      if (deps.onBeforeAssemble) {
+        await deps.onBeforeAssemble()
       }
 
-      const transcript = deps.transcription.assembleTranscript(meetingId, chunks)
+      if (deps.transcription) {
+        let chunks = chunkBuffers.get(meetingId) ?? []
 
-      if (deps.diarization) {
-        const speakerMap = new Map(
-          (deps.storage.getSpeakers(meetingId)).map((s) => [s.id, s.label]),
-        )
-        const labeledParts = transcript.chunks.map((chunk) => {
-          const label = chunk.speakerId ? speakerMap.get(chunk.speakerId) : undefined
-          return label ? `[${label}]: ${chunk.text}` : chunk.text
-        })
-        transcript.fullText = labeledParts.join(" ")
+        if (deps.diarization) {
+          const result = await deps.diarization.assignSpeakers(meetingId, chunks)
+          chunks = result.chunks
+          deps.storage.saveSpeakers(meetingId, result.speakers)
+        }
+
+        const transcript = deps.transcription.assembleTranscript(meetingId, chunks)
+
+        if (deps.diarization) {
+          const speakerMap = new Map(
+            (deps.storage.getSpeakers(meetingId)).map((s) => [s.id, s.label]),
+          )
+          const labeledParts = transcript.chunks.map((chunk) => {
+            const label = chunk.speakerId ? speakerMap.get(chunk.speakerId) : undefined
+            return label ? `[${label}]: ${chunk.text}` : chunk.text
+          })
+          transcript.fullText = labeledParts.join(" ")
+        }
+
+        deps.storage.saveTranscript(transcript)
+
+        console.log("[orchestrator] Generating AI summary for", transcript.fullText.length, "chars...")
+        try {
+          const summary = await deps.intelligence.generateSummary(transcript)
+          deps.storage.saveSummary(summary)
+          console.log("[orchestrator] AI summary generated:", summary.title)
+        } catch (err) {
+          console.error("[orchestrator] AI summary failed:", err)
+          // Fall back: save a minimal summary so export still works
+          const { v4: uuid } = await import("uuid")
+          deps.storage.saveSummary({
+            id: uuid(),
+            meetingId,
+            title: "Meeting Notes",
+            overview: transcript.fullText.substring(0, 200),
+            actionItems: [],
+            decisions: [],
+            keyPoints: [],
+            createdAt: new Date().toISOString(),
+          })
+        }
       }
-
-      deps.storage.saveTranscript(transcript)
-
-      const summary = await deps.intelligence.generateSummary(transcript)
-      deps.storage.saveSummary(summary)
 
       meeting.status = "completed"
       deps.storage.updateMeeting(meeting)

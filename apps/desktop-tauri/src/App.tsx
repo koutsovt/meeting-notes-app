@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { createApp, requestMicPermission, isTauri, loadWhisperModel } from "./create-app.js"
+import { createApp, requestMicPermission, isTauri, loadWhisperModel, getApiKey, setApiKey } from "./create-app.js"
 import type { App as AppInstance } from "./create-app.js"
 import type { Meeting } from "@shared/types/meeting.js"
 import type { ExportResult } from "@shared/types/export.js"
@@ -172,6 +172,12 @@ function MeetingUI({ app }: { app: AppInstance }) {
   const [interimText, setInterimText] = useState("")
   const [currentModel, setCurrentModel] = useState("small.en")
   const [modelLoading, setModelLoading] = useState(false)
+  const [apiKey, setApiKeyState] = useState("")
+  const hasAI = apiKey.length > 0
+
+  useEffect(() => {
+    getApiKey().then(setApiKeyState)
+  }, [])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isRecording = activeMeeting !== null
 
@@ -279,15 +285,23 @@ function MeetingUI({ app }: { app: AppInstance }) {
     [app, refreshMeetings]
   )
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!exportResult) return
     const blob = new Blob([exportResult.content], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = exportResult.filename
-    a.click()
-    URL.revokeObjectURL(url)
+    const file = new File([blob], exportResult.filename, { type: "text/plain" })
+
+    // iOS WKWebView: use Share API if available, fall back to window.open
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: exportResult.filename })
+      } catch {
+        // User cancelled share — not an error
+      }
+    } else {
+      const url = URL.createObjectURL(blob)
+      window.open(url, "_blank")
+      setTimeout(() => URL.revokeObjectURL(url), 5000)
+    }
   }, [exportResult])
 
   const formatTime = (s: number) => {
@@ -364,6 +378,35 @@ function MeetingUI({ app }: { app: AppInstance }) {
           <span className="label">Duration</span>
           <div className="row-right">
             <span className="mono">{formatTime(elapsed)}</span>
+          </div>
+        </div>
+
+        <div className="row">
+          <span className="label">AI Summary</span>
+          <div className="row-right">
+            {hasAI ? (
+              <span className="badge badge-granted" onClick={async () => {
+                await setApiKey("")
+                setApiKeyState("")
+                window.location.reload()
+              }}>GLM ✓</span>
+            ) : (
+              <input
+                type="password"
+                placeholder="GLM API key"
+                style={{ fontSize: 12, padding: "2px 6px", width: 160 }}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter") {
+                    const val = (e.target as HTMLInputElement).value.trim()
+                    if (val) {
+                      await setApiKey(val)
+                      setApiKeyState(val)
+                      window.location.reload()
+                    }
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

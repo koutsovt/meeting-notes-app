@@ -124,7 +124,7 @@ export function createSpeechBuffer(): SpeechBuffer {
 
       recognition = getSpeechRecognition()
       if (!recognition) {
-        console.warn("SpeechRecognition not available — text will show (no speech detected)")
+        console.warn("SpeechRecognition not available")
         return
       }
 
@@ -152,7 +152,7 @@ export function createSpeechBuffer(): SpeechBuffer {
         ? matches.reduce((sum, r) => sum + r.confidence, 0) / matches.length
         : 0
       return {
-        text: text || "(no speech detected)",
+        text,
         confidence: avgConfidence,
       }
     },

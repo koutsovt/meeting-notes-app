@@ -28,11 +28,11 @@ describe("SpeechBuffer", () => {
     expect(buffer.isRunning()).toBe(false)
   })
 
-  it("returns no-speech-detected for empty range", () => {
+  it("returns empty text for empty range", () => {
     const buffer = createSpeechBuffer()
     buffer.start()
     const result = buffer.getTextForRange(0, 5000)
-    expect(result.text).toBe("(no speech detected)")
+    expect(result.text).toBe("")
     expect(result.confidence).toBe(0)
     buffer.stop()
   })
@@ -42,7 +42,7 @@ describe("SpeechBuffer", () => {
     buffer.start()
     buffer.clear()
     const result = buffer.getTextForRange(0, 5000)
-    expect(result.text).toBe("(no speech detected)")
+    expect(result.text).toBe("")
     buffer.stop()
   })
 

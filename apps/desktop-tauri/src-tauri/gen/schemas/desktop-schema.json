@@ -2245,6 +2245,102 @@
           "type": "string",
           "const": "core:window:deny-unminimize",
           "markdownDescription": "Denies the unminimize command without any pre-configured scope."
+        },
+        {
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-item`\n- `allow-save-item`\n- `allow-remove-item`",
+          "type": "string",
+          "const": "keychain:default",
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-item`\n- `allow-save-item`\n- `allow-remove-item`"
+        },
+        {
+          "description": "Enables the get_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:allow-get-item",
+          "markdownDescription": "Enables the get_item command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:allow-remove-item",
+          "markdownDescription": "Enables the remove_item command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:allow-save-item",
+          "markdownDescription": "Enables the save_item command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:deny-get-item",
+          "markdownDescription": "Denies the get_item command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:deny-remove-item",
+          "markdownDescription": "Denies the remove_item command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "keychain:deny-save-item",
+          "markdownDescription": "Denies the save_item command without any pre-configured scope."
+        },
+        {
+          "description": "Default permissions for the speech-recognizer plugin\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-check-permissions`\n- `allow-request-permissions`",
+          "type": "string",
+          "const": "speech-recognizer:default",
+          "markdownDescription": "Default permissions for the speech-recognizer plugin\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-check-permissions`\n- `allow-request-permissions`"
+        },
+        {
+          "description": "Enables the check_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:allow-check-permissions",
+          "markdownDescription": "Enables the check_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the request_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:allow-request-permissions",
+          "markdownDescription": "Enables the request_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the start command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:allow-start",
+          "markdownDescription": "Enables the start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:allow-stop",
+          "markdownDescription": "Enables the stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the check_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:deny-check-permissions",
+          "markdownDescription": "Denies the check_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the request_permissions command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:deny-request-permissions",
+          "markdownDescription": "Denies the request_permissions command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:deny-start",
+          "markdownDescription": "Denies the start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "speech-recognizer:deny-stop",
+          "markdownDescription": "Denies the stop command without any pre-configured scope."
         }
       ]
     },

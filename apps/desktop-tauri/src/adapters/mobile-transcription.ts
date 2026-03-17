@@ -4,28 +4,16 @@ import type { TranscriptionService } from "@shared/services/transcription-servic
 import type { AudioChunk } from "@shared/types/audio.js"
 import type { TranscriptChunk, Transcript } from "@shared/types/transcript.js"
 
-// Dynamic import to bypass TS resolution issue with addPluginListener
-async function registerPluginListener<T>(
-  plugin: string,
-  event: string,
-  cb: (payload: T) => void,
-): Promise<{ unregister: () => Promise<void> }> {
-  const core = await import("@tauri-apps/api/core")
-  const fn = (core as any).addPluginListener
-  return fn(plugin, event, cb)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+interface RecognitionResult {
+  transcript: string
+  isFinal: boolean
+  confidence: number
 }
 
 /**
- * Mobile transcription service using tauri-plugin-stt.
- * Uses native iOS SFSpeechRecognizer via addPluginListener directly
- * (bypasses the plugin's broken isMobilePlatform() detection in its JS wrapper).
- *
- * The plugin's Swift code uses AVAudioEngine + SFSpeechAudioBufferRecognitionRequest
- * which provides much better accuracy than webkitSpeechRecognition in WKWebView.
+ * Mobile transcription service using custom speech-recognizer plugin.
+ * Uses Tauri Channel API for reliable result delivery from native
+ * SFSpeechRecognizer → JS (bypasses broken self.trigger() in tauri-plugin-stt).
  */
 export function createMobileTranscriptionService(): {
   service: TranscriptionService
@@ -40,11 +28,11 @@ export function createMobileTranscriptionService(): {
   }
 
   let buffer: BufferedResult[] = []
+  let lastDrainIndex = 0
   let startEpochMs = 0
   let listening = false
-  let resultUnlisten: { unregister: () => Promise<void> } | null = null
-  let errorUnlisten: { unregister: () => Promise<void> } | null = null
-  let stateUnlisten: { unregister: () => Promise<void> } | null = null
+  let flushIntervalId: ReturnType<typeof setInterval> | null = null
+  let lastInterimText = ""
 
   const wrapper = {
     onInterim: null as ((text: string) => void) | null,
@@ -52,102 +40,110 @@ export function createMobileTranscriptionService(): {
     async startListeningForMeeting(): Promise<void> {
       if (listening) return
       buffer = []
+      lastDrainIndex = 0
       startEpochMs = Date.now()
       listening = true
 
       try {
-        // Step 1: Request permissions and wait for iOS to fully grant them
-        const permResult = await invoke("plugin:stt|request_permission") as {
-          microphone?: string
-          speechRecognition?: string
+        console.log("[mobile-stt] Requesting permissions...")
+        const perms = (await invoke("plugin:speech-recognizer|request_permissions")) as {
+          microphone: string
+          speechRecognition: string
         }
+        console.log("[mobile-stt] Permissions:", perms)
 
-        if (permResult.microphone !== "granted" || permResult.speechRecognition !== "granted") {
-          console.error("[mobile-stt] Permissions not granted:", permResult)
+        if (perms.microphone !== "granted" || perms.speechRecognition !== "granted") {
+          console.error("[mobile-stt] Permissions not granted:", perms)
           listening = false
           return
         }
 
-        // Step 2: Small delay to let iOS fully release audio session after permission dialogs
-        await delay(500)
-
-        // Step 3: Register listeners BEFORE starting recognition
-        resultUnlisten = await registerPluginListener<{
-          transcript?: string
-          isFinal?: boolean
-          confidence?: number
-        }>("stt", "result", (result) => {
+        // Create a Channel for receiving results — the key fix
+        // Dynamic import to bypass TS resolution issue with Channel export
+        const core = await import("@tauri-apps/api/core")
+        const ChannelClass = (core as any).Channel
+        console.log("[mobile-stt] Channel class:", !!ChannelClass)
+        const onResult = new ChannelClass()
+        lastInterimText = ""
+        onResult.onmessage = (result: RecognitionResult) => {
+          console.log("[mobile-stt] Got result:", JSON.stringify(result).substring(0, 100))
           const text = result.transcript?.trim()
-          if (!text) return
 
           if (result.isFinal) {
-            buffer.push({
-              text,
-              timestampMs: Date.now() - startEpochMs,
-              confidence: result.confidence ?? 0.8,
-            })
-          } else {
+            // iOS sends empty final results — use the last interim text instead
+            const finalText = text || lastInterimText
+            lastInterimText = ""
+            if (finalText) {
+              buffer.push({
+                text: finalText,
+                timestampMs: Date.now() - startEpochMs,
+                confidence: result.confidence || 0.8,
+              })
+            }
+          } else if (text) {
+            lastInterimText = text
             wrapper.onInterim?.(text)
           }
-        })
+        }
 
-        errorUnlisten = await registerPluginListener<{
-          code?: string
-          message?: string
-          details?: string
-        }>("stt", "error", (err) => {
-          console.error("[mobile-stt] Error:", err.code, err.message, err.details)
-        })
-
-        stateUnlisten = await registerPluginListener<{
-          state?: string
-        }>("stt", "stateChange", (state) => {
-          console.log("[mobile-stt] State:", state.state)
-        })
-
-        // Step 4: Start recognition
-        await invoke("plugin:stt|start_listening", {
+        console.log("[mobile-stt] Starting speech recognizer...")
+        await invoke("plugin:speech-recognizer|start", {
+          onResult,
           config: {
             language: "en-US",
             interimResults: true,
             continuous: true,
           },
         })
+        console.log("[mobile-stt] Speech recognizer started successfully")
       } catch (err) {
         console.error("[mobile-stt] Failed to start:", err)
         listening = false
-        // Clean up any registered listeners
-        await cleanup()
       }
     },
 
     async stopListeningForMeeting(): Promise<void> {
       if (!listening) return
       listening = false
+      if (flushIntervalId) {
+        clearInterval(flushIntervalId)
+        flushIntervalId = null
+      }
       try {
-        await invoke("plugin:stt|stop_listening")
+        await invoke("plugin:speech-recognizer|stop")
       } catch (err) {
         console.error("[mobile-stt] Failed to stop:", err)
       }
-      await cleanup()
+      // Wait for final result to arrive from native side
+      await new Promise((r) => setTimeout(r, 1500))
+      // Flush any remaining interim text (iOS often doesn't send a useful final result)
+      if (lastInterimText) {
+        buffer.push({
+          text: lastInterimText,
+          timestampMs: Date.now() - startEpochMs,
+          confidence: 0.7,
+        })
+        lastInterimText = ""
+      }
+      console.log("[mobile-stt] Stopped, buffer has", buffer.length, "results")
     },
 
     service: {
       async transcribeChunk(chunk: AudioChunk): Promise<TranscriptChunk> {
-        const matches = buffer.filter(
-          (r) => r.timestampMs >= chunk.startTimeMs && r.timestampMs < chunk.endTimeMs,
-        )
-        const text = matches.map((r) => r.text).join(" ")
+        // Drain all new results since last chunk (avoids timestamp alignment issues)
+        const newResults = buffer.slice(lastDrainIndex)
+        lastDrainIndex = buffer.length
+        const text = newResults.map((r) => r.text).join(" ")
         const avgConfidence =
-          matches.length > 0
-            ? matches.reduce((sum, r) => sum + r.confidence, 0) / matches.length
+          newResults.length > 0
+            ? newResults.reduce((sum, r) => sum + r.confidence, 0) / newResults.length
             : 0
 
         return {
           id: uuid(),
           meetingId: chunk.meetingId,
           sequence: chunk.sequence,
-          text: text || "(no speech detected)",
+          text,
           startTimeMs: chunk.startTimeMs,
           endTimeMs: chunk.endTimeMs,
           confidence: avgConfidence,
@@ -157,30 +153,32 @@ export function createMobileTranscriptionService(): {
 
       assembleTranscript(meetingId: string, chunks: TranscriptChunk[]): Transcript {
         const sorted = [...chunks].sort((a, b) => a.sequence - b.sequence)
+        // Collect all text: from drained chunks + undrained buffer
+        const undrained = buffer.slice(lastDrainIndex)
+        const allText = [
+          ...sorted.map((c) => c.text).filter(Boolean),
+          ...undrained.map((r) => r.text),
+        ].join(" ").trim()
+        // Distribute text across chunks so export shows text at each timestamp
+        if (allText && sorted.length > 0) {
+          const words = allText.split(/\s+/)
+          const perChunk = Math.ceil(words.length / sorted.length)
+          for (let i = 0; i < sorted.length; i++) {
+            sorted[i] = {
+              ...sorted[i],
+              text: words.slice(i * perChunk, (i + 1) * perChunk).join(" "),
+            }
+          }
+        }
         return {
           id: uuid(),
           meetingId,
           chunks: sorted,
-          fullText: sorted.map((c) => c.text).join(" "),
+          fullText: allText,
           createdAt: new Date().toISOString(),
         }
       },
     } as TranscriptionService,
-  }
-
-  async function cleanup(): Promise<void> {
-    if (resultUnlisten) {
-      await resultUnlisten.unregister()
-      resultUnlisten = null
-    }
-    if (errorUnlisten) {
-      await errorUnlisten.unregister()
-      errorUnlisten = null
-    }
-    if (stateUnlisten) {
-      await stateUnlisten.unregister()
-      stateUnlisten = null
-    }
   }
 
   return wrapper

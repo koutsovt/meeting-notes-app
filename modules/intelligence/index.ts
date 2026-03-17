@@ -1,4 +1,5 @@
 import { v4 as uuid } from "uuid"
+import { stream } from "@kenkaiiii/gg-ai"
 import type { IntelligenceService } from "../../shared/services/intelligence-service.js"
 import type { Transcript, TranscriptChunk } from "../../shared/types/transcript.js"
 import type { MeetingSummary, ActionItem, Decision, LiveNote } from "../../shared/types/summary.js"
@@ -78,6 +79,81 @@ function createKeywordBackend(): SummaryBackend {
         actionItems,
         decisions,
         keyPoints,
+      }
+    },
+  }
+}
+
+const SUMMARY_PROMPT = `You are a meeting notes assistant. Analyze the following meeting transcript and return a JSON object with exactly this structure:
+
+{
+  "title": "A short descriptive title for the meeting (max 10 words)",
+  "overview": "A 2-3 sentence summary of what was discussed",
+  "keyPoints": ["key point 1", "key point 2", ...],
+  "actionItems": [{"description": "what needs to be done", "assignee": "person or null"}],
+  "decisions": [{"description": "what was decided"}]
+}
+
+If a field has no items, use an empty array. Return ONLY valid JSON, no markdown fences.`
+
+export function createAIBackend(apiKey: string): SummaryBackend {
+  // Allow OpenAI SDK to run in WKWebView (not a public website — key is local)
+  if (typeof globalThis !== "undefined") {
+    (globalThis as any).process = (globalThis as any).process || {}
+    ;((globalThis as any).process.env = (globalThis as any).process.env || {}).DANGEROUSLY_ALLOW_BROWSER = "true"
+  }
+
+  return {
+    async analyze(transcript: Transcript): Promise<AnalysisResult> {
+      const text = transcript.fullText.trim()
+      if (!text) {
+        return {
+          title: "Empty Meeting",
+          overview: "No speech was captured during this meeting.",
+          actionItems: [],
+          decisions: [],
+          keyPoints: [],
+        }
+      }
+
+      const response = await stream({
+        provider: "glm",
+        model: "glm-4-flash",
+        apiKey,
+        maxTokens: 1024,
+        temperature: 0.3,
+        messages: [
+          { role: "system", content: SUMMARY_PROMPT },
+          { role: "user", content: `Transcript:\n\n${text}` },
+        ],
+      })
+
+      const result = await response
+      const content = result.message.content
+      const responseText = typeof content === "string"
+        ? content
+        : content
+            .filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("")
+
+      const parsed = JSON.parse(responseText)
+
+      return {
+        title: parsed.title ?? "Meeting Summary",
+        overview: parsed.overview ?? "",
+        actionItems: (parsed.actionItems ?? []).map((a: { description: string; assignee?: string | null }) => ({
+          id: uuid(),
+          description: a.description,
+          assignee: a.assignee ?? null,
+          dueDate: null,
+        })),
+        decisions: (parsed.decisions ?? []).map((d: { description: string }) => ({
+          id: uuid(),
+          description: d.description,
+          madeBy: null,
+        })),
+        keyPoints: parsed.keyPoints ?? [],
       }
     },
   }

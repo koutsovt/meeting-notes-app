@@ -1,5 +1,5 @@
 import { createOrchestrator } from "./orchestrator/index.js"
-import { createIntelligenceService } from "@modules/intelligence/index.js"
+import { createIntelligenceService, createAIBackend } from "@modules/intelligence/index.js"
 import { createExportService } from "@modules/export/index.js"
 import { createMemoryStorageService } from "./storage-memory.js"
 import { createSpeechBuffer } from "./adapters/speech-buffer.js"
@@ -20,6 +20,37 @@ export interface App {
   onTranscriptUpdate: ((chunk: TranscriptChunk) => void) | null
   onLiveNote: ((note: LiveNote) => void) | null
   onInterimText: ((text: string) => void) | null
+}
+
+const KEYCHAIN_KEY = "meeting-notes-ai-api-key"
+
+export async function getApiKey(): Promise<string> {
+  try {
+    const { getItem } = await import("tauri-plugin-keychain")
+    const key = await getItem(KEYCHAIN_KEY)
+    return key ?? ""
+  } catch {
+    // Fallback to localStorage when keychain unavailable (browser dev)
+    return localStorage.getItem(KEYCHAIN_KEY) ?? ""
+  }
+}
+
+export async function setApiKey(key: string): Promise<void> {
+  try {
+    const { saveItem, removeItem } = await import("tauri-plugin-keychain")
+    if (key) {
+      await saveItem(KEYCHAIN_KEY, key)
+    } else {
+      await removeItem(KEYCHAIN_KEY)
+    }
+  } catch {
+    // Fallback to localStorage when keychain unavailable (browser dev)
+    if (key) {
+      localStorage.setItem(KEYCHAIN_KEY, key)
+    } else {
+      localStorage.removeItem(KEYCHAIN_KEY)
+    }
+  }
 }
 
 export function isTauri(): boolean {
@@ -50,6 +81,12 @@ export async function loadWhisperModel(model: string = "small.en"): Promise<void
 export async function createApp(micStream: MediaStream | null): Promise<App> {
   const storage = createMemoryStorageService()
   const platform = detectPlatform()
+  let apiKey = await getApiKey()
+  if (!apiKey) apiKey = "12351402e4634505b7b94ea9a2593614.WAj5qHze8UJqrcYz"
+  console.log("[app] API key loaded:", apiKey ? `${apiKey.substring(0, 8)}...` : "(none)")
+  const backend = apiKey ? createAIBackend(apiKey) : undefined
+  console.log("[app] AI backend:", backend ? "GLM" : "keyword-only")
+  const intelligence = createIntelligenceService(backend)
 
   const app: App = {
     orchestrator: null!,
@@ -60,27 +97,31 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
   }
 
   if (platform === "ios" || platform === "android") {
-    // Mobile: timer-based capture + webkitSpeechRecognition
-    // Uses iOS WKWebView's built-in SFSpeechRecognizer wrapper
-    const speechBuffer = createSpeechBuffer()
-    speechBuffer.onInterim = (text) => app.onInterimText?.(text)
+    // Mobile: timer-based capture + native SFSpeechRecognizer via Channel API
+    const { createMobileTranscriptionService } = await import("./adapters/mobile-transcription.js")
+    const mobileStt = createMobileTranscriptionService()
+    mobileStt.onInterim = (text) => app.onInterimText?.(text)
 
     const mobileCapture = createMobileCaptureService()
     const originalStart = mobileCapture.start.bind(mobileCapture)
     const originalStop = mobileCapture.stop.bind(mobileCapture)
     mobileCapture.start = (id, onChunk) => {
-      speechBuffer.start()
+      mobileStt.startListeningForMeeting().catch((err) => {
+        console.error("[mobile] STT start failed:", err)
+      })
       originalStart(id, onChunk)
     }
     mobileCapture.stop = () => {
       originalStop()
-      speechBuffer.stop()
     }
 
     app.orchestrator = createOrchestrator({
       capture: mobileCapture,
-      transcription: createWebTranscriptionService(speechBuffer),
-      intelligence: createIntelligenceService(),
+      transcription: mobileStt.service,
+      onBeforeAssemble: async () => {
+        await mobileStt.stopListeningForMeeting()
+      },
+      intelligence,
       storage,
       export: createExportService(),
       onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
@@ -93,7 +134,7 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
     app.orchestrator = createOrchestrator({
       capture: createTauriCaptureService(),
       transcription: createTauriTranscriptionService(),
-      intelligence: createIntelligenceService(),
+      intelligence,
       storage,
       export: createExportService(),
       onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),
@@ -107,7 +148,7 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
     app.orchestrator = createOrchestrator({
       capture: createWebCaptureService(micStream!, speechBuffer),
       transcription: createWebTranscriptionService(speechBuffer),
-      intelligence: createIntelligenceService(),
+      intelligence,
       storage,
       export: createExportService(),
       onTranscriptUpdate: (chunk) => app.onTranscriptUpdate?.(chunk),

@@ -2247,106 +2247,100 @@
           "markdownDescription": "Denies the unminimize command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the STT plugin - allows all speech-to-text operations\n#### This default permission set includes:\n\n- `allow-is-available`\n- `allow-get-supported-languages`\n- `allow-check-permission`\n- `allow-request-permission`\n- `allow-start-listening`\n- `allow-stop-listening`\n- `allow-register-listener`\n- `allow-remove-listener`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-item`\n- `allow-save-item`\n- `allow-remove-item`",
           "type": "string",
-          "const": "stt:default",
-          "markdownDescription": "Default permissions for the STT plugin - allows all speech-to-text operations\n#### This default permission set includes:\n\n- `allow-is-available`\n- `allow-get-supported-languages`\n- `allow-check-permission`\n- `allow-request-permission`\n- `allow-start-listening`\n- `allow-stop-listening`\n- `allow-register-listener`\n- `allow-remove-listener`"
+          "const": "keychain:default",
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-item`\n- `allow-save-item`\n- `allow-remove-item`"
         },
         {
-          "description": "Enables the check_permission command without any pre-configured scope.",
+          "description": "Enables the get_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-check-permission",
-          "markdownDescription": "Enables the check_permission command without any pre-configured scope."
+          "const": "keychain:allow-get-item",
+          "markdownDescription": "Enables the get_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the get_supported_languages command without any pre-configured scope.",
+          "description": "Enables the remove_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-get-supported-languages",
-          "markdownDescription": "Enables the get_supported_languages command without any pre-configured scope."
+          "const": "keychain:allow-remove-item",
+          "markdownDescription": "Enables the remove_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the is_available command without any pre-configured scope.",
+          "description": "Enables the save_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-is-available",
-          "markdownDescription": "Enables the is_available command without any pre-configured scope."
+          "const": "keychain:allow-save-item",
+          "markdownDescription": "Enables the save_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the register_listener command without any pre-configured scope.",
+          "description": "Denies the get_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-register-listener",
-          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
+          "const": "keychain:deny-get-item",
+          "markdownDescription": "Denies the get_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the remove_listener command without any pre-configured scope.",
+          "description": "Denies the remove_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-remove-listener",
-          "markdownDescription": "Enables the remove_listener command without any pre-configured scope."
+          "const": "keychain:deny-remove-item",
+          "markdownDescription": "Denies the remove_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the request_permission command without any pre-configured scope.",
+          "description": "Denies the save_item command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-request-permission",
-          "markdownDescription": "Enables the request_permission command without any pre-configured scope."
+          "const": "keychain:deny-save-item",
+          "markdownDescription": "Denies the save_item command without any pre-configured scope."
         },
         {
-          "description": "Enables the start_listening command without any pre-configured scope.",
+          "description": "Default permissions for the speech-recognizer plugin\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-check-permissions`\n- `allow-request-permissions`",
           "type": "string",
-          "const": "stt:allow-start-listening",
-          "markdownDescription": "Enables the start_listening command without any pre-configured scope."
+          "const": "speech-recognizer:default",
+          "markdownDescription": "Default permissions for the speech-recognizer plugin\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-check-permissions`\n- `allow-request-permissions`"
         },
         {
-          "description": "Enables the stop_listening command without any pre-configured scope.",
+          "description": "Enables the check_permissions command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:allow-stop-listening",
-          "markdownDescription": "Enables the stop_listening command without any pre-configured scope."
+          "const": "speech-recognizer:allow-check-permissions",
+          "markdownDescription": "Enables the check_permissions command without any pre-configured scope."
         },
         {
-          "description": "Denies the check_permission command without any pre-configured scope.",
+          "description": "Enables the request_permissions command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-check-permission",
-          "markdownDescription": "Denies the check_permission command without any pre-configured scope."
+          "const": "speech-recognizer:allow-request-permissions",
+          "markdownDescription": "Enables the request_permissions command without any pre-configured scope."
         },
         {
-          "description": "Denies the get_supported_languages command without any pre-configured scope.",
+          "description": "Enables the start command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-get-supported-languages",
-          "markdownDescription": "Denies the get_supported_languages command without any pre-configured scope."
+          "const": "speech-recognizer:allow-start",
+          "markdownDescription": "Enables the start command without any pre-configured scope."
         },
         {
-          "description": "Denies the is_available command without any pre-configured scope.",
+          "description": "Enables the stop command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-is-available",
-          "markdownDescription": "Denies the is_available command without any pre-configured scope."
+          "const": "speech-recognizer:allow-stop",
+          "markdownDescription": "Enables the stop command without any pre-configured scope."
         },
         {
-          "description": "Denies the register_listener command without any pre-configured scope.",
+          "description": "Denies the check_permissions command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-register-listener",
-          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
+          "const": "speech-recognizer:deny-check-permissions",
+          "markdownDescription": "Denies the check_permissions command without any pre-configured scope."
         },
         {
-          "description": "Denies the remove_listener command without any pre-configured scope.",
+          "description": "Denies the request_permissions command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-remove-listener",
-          "markdownDescription": "Denies the remove_listener command without any pre-configured scope."
+          "const": "speech-recognizer:deny-request-permissions",
+          "markdownDescription": "Denies the request_permissions command without any pre-configured scope."
         },
         {
-          "description": "Denies the request_permission command without any pre-configured scope.",
+          "description": "Denies the start command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-request-permission",
-          "markdownDescription": "Denies the request_permission command without any pre-configured scope."
+          "const": "speech-recognizer:deny-start",
+          "markdownDescription": "Denies the start command without any pre-configured scope."
         },
         {
-          "description": "Denies the start_listening command without any pre-configured scope.",
+          "description": "Denies the stop command without any pre-configured scope.",
           "type": "string",
-          "const": "stt:deny-start-listening",
-          "markdownDescription": "Denies the start_listening command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the stop_listening command without any pre-configured scope.",
-          "type": "string",
-          "const": "stt:deny-stop-listening",
-          "markdownDescription": "Denies the stop_listening command without any pre-configured scope."
+          "const": "speech-recognizer:deny-stop",
+          "markdownDescription": "Denies the stop command without any pre-configured scope."
         }
       ]
     },

@@ -12,7 +12,7 @@ function mockSpeechBuffer(textMap: Record<string, { text: string; confidence: nu
     onInterim: null,
     getTextForRange(startMs, endMs) {
       const key = `${startMs}-${endMs}`
-      return textMap[key] ?? { text: "(no speech detected)", confidence: 0 }
+      return textMap[key] ?? { text: "", confidence: 0 }
     },
   }
 }
@@ -43,12 +43,12 @@ describe("WebTranscriptionService", () => {
     expect(result.sequence).toBe(0)
   })
 
-  it("returns no-speech for unrecognized windows", async () => {
+  it("returns empty text for unrecognized windows", async () => {
     const buffer = mockSpeechBuffer({})
     const service = createWebTranscriptionService(buffer)
     const result = await service.transcribeChunk(makeChunk(0))
 
-    expect(result.text).toBe("(no speech detected)")
+    expect(result.text).toBe("")
     expect(result.confidence).toBe(0)
   })
 

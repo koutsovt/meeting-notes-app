@@ -114,7 +114,7 @@ export function createTauriTranscriptionService(): TranscriptionService {
         id: uuid(),
         meetingId: chunk.meetingId,
         sequence: chunk.sequence,
-        text: text || "(no speech detected)",
+        text,
         startTimeMs: chunk.startTimeMs,
         endTimeMs: chunk.endTimeMs,
         confidence: result.confidence,

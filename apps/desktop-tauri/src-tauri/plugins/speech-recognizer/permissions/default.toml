@@ -1,0 +1,8 @@
+[default]
+description = "Default permissions for the speech-recognizer plugin"
+permissions = [
+    "allow-start",
+    "allow-stop",
+    "allow-check-permissions",
+    "allow-request-permissions",
+]
