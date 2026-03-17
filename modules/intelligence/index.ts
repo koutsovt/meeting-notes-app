@@ -97,12 +97,6 @@ const SUMMARY_PROMPT = `You are a meeting notes assistant. Analyze the following
 If a field has no items, use an empty array. Return ONLY valid JSON, no markdown fences.`
 
 export function createAIBackend(apiKey: string): SummaryBackend {
-  // Allow OpenAI SDK to run in WKWebView (not a public website — key is local)
-  if (typeof globalThis !== "undefined") {
-    (globalThis as any).process = (globalThis as any).process || {}
-    ;((globalThis as any).process.env = (globalThis as any).process.env || {}).DANGEROUSLY_ALLOW_BROWSER = "true"
-  }
-
   return {
     async analyze(transcript: Transcript): Promise<AnalysisResult> {
       const text = transcript.fullText.trim()
@@ -118,7 +112,7 @@ export function createAIBackend(apiKey: string): SummaryBackend {
 
       const response = await stream({
         provider: "glm",
-        model: "glm-4-flash",
+        model: "glm-4.7-flash",
         apiKey,
         maxTokens: 1024,
         temperature: 0.3,

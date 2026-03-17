@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "FFE6AC6450EC00D30494DF77"
-               BuildableName = "Meeting Notes.app"
+               BuildableName = "Synolo.app"
                BlueprintName = "meeting-notes_iOS"
                ReferencedContainer = "container:meeting-notes.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FFE6AC6450EC00D30494DF77"
-            BuildableName = "Meeting Notes.app"
+            BuildableName = "Synolo.app"
             BlueprintName = "meeting-notes_iOS"
             ReferencedContainer = "container:meeting-notes.xcodeproj">
          </BuildableReference>
@@ -66,7 +66,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FFE6AC6450EC00D30494DF77"
-            BuildableName = "Meeting Notes.app"
+            BuildableName = "Synolo.app"
             BlueprintName = "meeting-notes_iOS"
             ReferencedContainer = "container:meeting-notes.xcodeproj">
          </BuildableReference>
@@ -95,7 +95,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FFE6AC6450EC00D30494DF77"
-            BuildableName = "Meeting Notes.app"
+            BuildableName = "Synolo.app"
             BlueprintName = "meeting-notes_iOS"
             ReferencedContainer = "container:meeting-notes.xcodeproj">
          </BuildableReference>

@@ -35,13 +35,15 @@ export function App() {
     return (
       <div className="app">
         <header className="title-bar">
-          <h1 className="app-name">meeting notes</h1>
+          <h1 className="app-name">Synolo</h1>
           <span className="version">v0.1.0</span>
         </header>
-        <div className="panel">
-          <div className="row">
-            <span className="label">Microphone</span>
-            <span className="badge badge-processing">Requesting...</span>
+        <div className="card">
+          <div className="card-body">
+            <div className="record-section">
+              <div className="record-status">Initializing...</div>
+              <span className="badge badge-processing">Requesting microphone</span>
+            </div>
           </div>
         </div>
       </div>
@@ -52,18 +54,12 @@ export function App() {
     return (
       <div className="app">
         <header className="title-bar">
-          <h1 className="app-name">meeting notes</h1>
+          <h1 className="app-name">Synolo</h1>
           <span className="version">v0.1.0</span>
         </header>
-        <div className="panel">
-          <div className="row">
-            <span className="label">{isTauri() ? "Setup" : "Microphone"}</span>
-            <span className="badge badge-denied">Error</span>
-          </div>
-        </div>
-        <p className="error">
+        <div className="error-banner">
           {permissionError}
-        </p>
+        </div>
       </div>
     )
   }
@@ -71,7 +67,7 @@ export function App() {
   return <MeetingUI app={appRef.current!} />
 }
 
-function LiveTranscript({ chunks, interim }: { chunks: TranscriptChunk[]; interim: string }) {
+function LiveTranscript({ chunks, interim, isRecording }: { chunks: TranscriptChunk[]; interim: string; isRecording: boolean }) {
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -81,18 +77,23 @@ function LiveTranscript({ chunks, interim }: { chunks: TranscriptChunk[]; interi
   }, [chunks, interim])
 
   return (
-    <div className="panel">
-      <div className="section-header">Live Transcript</div>
-      <div className="transcript-scroll">
-        {chunks.length === 0 && !interim ? (
-          <span className="dim">Listening...</span>
-        ) : (
-          <>
-            {chunks.map((c) => <pre key={c.id} style={{ margin: 0, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{c.text}</pre>)}
-            {interim && <span className="interim">{interim}</span>}
-          </>
-        )}
-        <div ref={endRef} />
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">Live Transcript</span>
+        {isRecording && <span className="badge badge-recording">Live</span>}
+      </div>
+      <div className="card-body" style={{ padding: 0 }}>
+        <div className="transcript-scroll">
+          {chunks.length === 0 && !interim ? (
+            <span className="dim">Listening...</span>
+          ) : (
+            <>
+              {chunks.map((c) => <p key={c.id} style={{ margin: 0, lineHeight: 1.7 }}>{c.text}</p>)}
+              {interim && <span className="interim">{interim}</span>}
+            </>
+          )}
+          <div ref={endRef} />
+        </div>
       </div>
     </div>
   )
@@ -102,47 +103,30 @@ function LiveNotes({ notes }: { notes: LiveNote[] }) {
   const latest = notes[notes.length - 1]
 
   return (
-    <div className="panel">
-      <div className="section-header">Live Notes</div>
-      <ul className="note-list">
-        {latest.keyPoints.map((kp, i) => (
-          <li key={i}>{kp}</li>
-        ))}
-      </ul>
-      {latest.actionItems.length > 0 && (
-        <>
-          <div className="section-header">Action Items</div>
-          <ul className="note-list">
-            {latest.actionItems.map((a) => (
-              <li key={a.id}>
-                {a.description}
-                {a.assignee ? ` (${a.assignee})` : ""}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  )
-}
-
-function MeetingRow({
-  meeting,
-  onExport,
-  onDelete,
-}: {
-  meeting: Meeting
-  onExport: (id: string, format: "markdown" | "json") => void
-  onDelete: (id: string) => void
-}) {
-  return (
-    <div className="row">
-      <span className="label">{meeting.title}</span>
-      <div className="row-right row-actions">
-        <span className="badge badge-done">{meeting.status}</span>
-        <button className="btn btn-sm" onClick={() => onExport(meeting.id, "markdown")}>MD</button>
-        <button className="btn btn-sm" onClick={() => onExport(meeting.id, "json")}>JSON</button>
-        <button className="btn btn-sm btn-delete" onClick={() => onDelete(meeting.id)}>×</button>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">Live Notes</span>
+        <span className="badge badge-active">AI</span>
+      </div>
+      <div className="card-body">
+        <ul className="note-list">
+          {latest.keyPoints.map((kp, i) => (
+            <li key={i}>{kp}</li>
+          ))}
+        </ul>
+        {latest.actionItems.length > 0 && (
+          <>
+            <div className="card-title" style={{ marginTop: 12, marginBottom: 8 }}>Action Items</div>
+            <ul className="note-list">
+              {latest.actionItems.map((a) => (
+                <li key={a.id}>
+                  {a.description}
+                  {a.assignee ? ` (${a.assignee})` : ""}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </div>
   )
@@ -150,12 +134,14 @@ function MeetingRow({
 
 function ExportPreview({ result, onDownload }: { result: ExportResult; onDownload: () => void }) {
   return (
-    <div className="panel">
-      <div className="section-header-row">
-        <span className="section-header">Export: {result.filename}</span>
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">Export: {result.filename}</span>
         <button className="btn btn-sm" onClick={onDownload}>Download</button>
       </div>
-      <pre className="export-content">{result.content}</pre>
+      <div className="card-body" style={{ padding: 0 }}>
+        <pre className="export-content">{result.content}</pre>
+      </div>
     </div>
   )
 }
@@ -185,7 +171,6 @@ function MeetingUI({ app }: { app: AppInstance }) {
     setMeetings(app.storage.listMeetings())
   }, [app])
 
-  // Wire live callbacks
   useEffect(() => {
     app.onTranscriptUpdate = (chunk) => {
       setInterimText("")
@@ -200,12 +185,10 @@ function MeetingUI({ app }: { app: AppInstance }) {
     }
   }, [app])
 
-  // Load meetings on mount
   useEffect(() => {
     refreshMeetings()
   }, [refreshMeetings])
 
-  // Timer — no reset here, moved to handleStart
   useEffect(() => {
     if (activeMeeting) {
       timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000)
@@ -290,12 +273,11 @@ function MeetingUI({ app }: { app: AppInstance }) {
     const blob = new Blob([exportResult.content], { type: "text/plain" })
     const file = new File([blob], exportResult.filename, { type: "text/plain" })
 
-    // iOS WKWebView: use Share API if available, fall back to window.open
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: exportResult.filename })
       } catch {
-        // User cancelled share — not an error
+        // User cancelled share
       }
     } else {
       const url = URL.createObjectURL(blob)
@@ -303,6 +285,22 @@ function MeetingUI({ app }: { app: AppInstance }) {
       setTimeout(() => URL.revokeObjectURL(url), 5000)
     }
   }, [exportResult])
+
+  const handleSaveApiKey = useCallback(async () => {
+    const input = document.getElementById("api-key-input") as HTMLInputElement
+    const val = input?.value?.trim()
+    if (val) {
+      await setApiKey(val)
+      setApiKeyState(val)
+      setError("API key saved — restart app to activate AI summaries")
+    }
+  }, [])
+
+  const handleClearApiKey = useCallback(async () => {
+    await setApiKey("")
+    setApiKeyState("")
+    setTimeout(() => window.location.reload(), 100)
+  }, [])
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60)
@@ -313,131 +311,133 @@ function MeetingUI({ app }: { app: AppInstance }) {
   return (
     <div className="app">
       <header className="title-bar">
-        <h1 className="app-name">meeting notes</h1>
+        <h1 className="app-name">Synolo</h1>
         <span className="version">v0.1.0</span>
       </header>
 
-      <div className="panel">
-        <div className="row">
-          <span className="label">Meeting</span>
-          <div className="row-right">
-            {!isRecording ? (
-              <button className="btn btn-action" onClick={handleStart} disabled={processing}>
-                Start
-              </button>
-            ) : (
-              <button className="btn btn-danger" onClick={handleStop} disabled={processing}>
-                {processing ? "Processing..." : "Stop"}
-              </button>
-            )}
-          </div>
+      {/* ── Record section ──────────────── */}
+      <div className="record-section">
+        <div className="record-timer">{formatTime(elapsed)}</div>
+        <button
+          className={`record-btn ${isRecording ? "record-btn-stop" : "record-btn-start"}`}
+          onClick={isRecording ? handleStop : handleStart}
+          disabled={processing}
+        >
+          {isRecording ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8" /></svg>
+          )}
+        </button>
+        <div className="record-status">
+          {processing ? "Processing..." : isRecording ? "Recording" : "Ready"}
         </div>
+      </div>
 
-        <div className="row">
-          <span className="label">Microphone</span>
-          <div className="row-right">
-            <span className="badge badge-granted">Granted</span>
-          </div>
+      {/* ── Settings card ───────────────── */}
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Settings</span>
+          <span className={`badge ${hasAI ? "badge-active" : "badge-idle"}`}>
+            {hasAI ? "AI On" : "AI Off"}
+          </span>
         </div>
-
-        <div className="row">
-          <span className="label">Model</span>
-          <div className="row-right">
-            {isTauri() ? (
-              <select
-                value={currentModel}
-                onChange={(e) => handleModelChange(e.target.value)}
-                disabled={isRecording || modelLoading}
-                className="model-select"
-              >
-                <option value="tiny.en">tiny.en (75 MB)</option>
-                <option value="base.en">base.en (142 MB)</option>
-                <option value="small.en">small.en (466 MB)</option>
-              </select>
-            ) : (
-              <span className="mono">Web Speech API</span>
-            )}
-            {modelLoading && <span className="badge badge-processing">Loading...</span>}
+        <div className="card-body">
+          <div className="row">
+            <span className="row-label">Microphone</span>
+            <span className="badge badge-recording">Granted</span>
           </div>
-        </div>
 
-        <div className="row">
-          <span className="label">Status</span>
-          <div className="row-right">
-            {isRecording ? (
-              <span className="badge badge-recording">Recording</span>
-            ) : processing ? (
-              <span className="badge badge-processing">Processing</span>
-            ) : (
-              <span className="badge badge-idle">Idle</span>
-            )}
-          </div>
-        </div>
+          {isTauri() && (
+            <div className="row">
+              <span className="row-label">Model</span>
+              <div className="row-value">
+                <select
+                  className="select"
+                  value={currentModel}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  disabled={isRecording || modelLoading}
+                >
+                  <option value="tiny.en">tiny.en</option>
+                  <option value="base.en">base.en</option>
+                  <option value="small.en">small.en</option>
+                </select>
+                {modelLoading && <span className="badge badge-processing">Loading</span>}
+              </div>
+            </div>
+          )}
 
-        <div className="row">
-          <span className="label">Duration</span>
-          <div className="row-right">
-            <span className="mono">{formatTime(elapsed)}</span>
-          </div>
-        </div>
-
-        <div className="row">
-          <span className="label">AI Summary</span>
-          <div className="row-right">
-            {hasAI ? (
-              <>
-                <span className="badge badge-granted">Active</span>
-                <button className="btn btn-sm btn-delete" style={{ marginLeft: 4 }} onClick={async () => {
-                  await setApiKey("")
-                  setApiKeyState("")
-                  setTimeout(() => window.location.reload(), 100)
-                }}>×</button>
-              </>
-            ) : (
-              <>
-                <input
-                  id="api-key-input"
-                  type="password"
-                  placeholder="API key"
-                  style={{ fontSize: 12, padding: "4px 6px", width: 120 }}
-                />
-                <button className="btn btn-sm" style={{ marginLeft: 4 }} onClick={async () => {
-                  const input = document.getElementById("api-key-input") as HTMLInputElement
-                  const val = input?.value?.trim()
-                  if (val) {
-                    await setApiKey(val)
-                    setApiKeyState(val)
-                    setError("API key saved — restart app to activate AI summaries")
-                  }
-                }}>Save</button>
-              </>
-            )}
+          <div className="row">
+            <span className="row-label">AI Summary</span>
+            <div className="row-value">
+              {hasAI ? (
+                <>
+                  <span className="badge badge-active">Active</span>
+                  <button className="btn btn-icon" onClick={handleClearApiKey}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <input className="input" id="api-key-input" type="password" placeholder="API key" style={{ width: 120 }} />
+                  <button className="btn btn-sm btn-primary" onClick={handleSaveApiKey}>Save</button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {(isRecording || liveChunks.length > 0) && <LiveTranscript chunks={liveChunks} interim={interimText} />}
+      {/* ── Live transcript ──────────────── */}
+      {(isRecording || liveChunks.length > 0) && (
+        <LiveTranscript chunks={liveChunks} interim={interimText} isRecording={isRecording} />
+      )}
+
+      {/* ── Live notes ──────────────────── */}
       {liveNotes.length > 0 && <LiveNotes notes={liveNotes} />}
 
-      {error && <p className="error">{error}</p>}
+      {/* ── Error banner ────────────────── */}
+      {error && <div className="error-banner">{error}</div>}
 
-      <div className="panel">
-        <div className="section-header">Completed Meetings</div>
-        {meetings.length === 0 ? (
-          <div className="row">
-            <span className="label dim">No meetings yet</span>
-          </div>
-        ) : (
-          meetings.map((m) => (
-            <MeetingRow key={m.id} meeting={m} onExport={handleExport} onDelete={handleDelete} />
-          ))
-        )}
+      {/* ── Meetings list ───────────────── */}
+      <div className="card">
+        <div className="card-header">
+          <span className="card-title">Meetings</span>
+          <span className="badge badge-idle">{meetings.length}</span>
+        </div>
+        <div className="card-body">
+          {meetings.length === 0 ? (
+            <p className="dim" style={{ fontSize: "0.85rem" }}>No meetings yet</p>
+          ) : (
+            meetings.map((m) => (
+              <div key={m.id} className="meeting-card">
+                <div>
+                  <div className="meeting-title">{m.title}</div>
+                  <div className="meeting-meta">
+                    {m.status} · {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ""}
+                  </div>
+                </div>
+                <div className="meeting-actions">
+                  <button className="btn btn-sm" onClick={() => handleExport(m.id, "markdown")}>MD</button>
+                  <button className="btn btn-sm" onClick={() => handleExport(m.id, "json")}>JSON</button>
+                  <button className="btn btn-icon" onClick={() => handleDelete(m.id)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
+      {/* ── Export preview ───────────────── */}
       {exportResult && <ExportPreview result={exportResult} onDownload={handleDownload} />}
 
+      {/* ── Footer ──────────────────────── */}
       <footer className="footer">
-        <span className="dim">{isTauri() ? `whisper.cpp ${currentModel} · Metal GPU` : "Web Speech API (browser-native)"}</span>
+        <span className="dim">
+          {isTauri() ? `whisper.cpp ${currentModel} · Metal GPU` : "Web Speech API (browser-native)"}
+        </span>
       </footer>
     </div>
   )

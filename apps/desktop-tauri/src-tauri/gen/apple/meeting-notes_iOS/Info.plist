@@ -19,9 +19,9 @@
 	<key>CFBundleVersion</key>
 	<string>0.1.0</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Meeting Notes needs microphone access to record meeting audio.</string>
+	<string>Synolo needs microphone access to record meeting audio.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Meeting Notes needs speech recognition to transcribe your meetings.</string>
+	<string>Synolo needs speech recognition to transcribe your meetings.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIBackgroundModes</key>

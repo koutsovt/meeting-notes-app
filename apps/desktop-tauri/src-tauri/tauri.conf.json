@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/Tauri/dev/crates/tauri-config-schema/schema.json",
-  "productName": "Meeting Notes",
+  "productName": "Synolo",
   "version": "0.1.0",
   "identifier": "com.onemeetingnotes.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Meeting Notes",
+        "title": "Synolo",
         "width": 900,
         "height": 700,
         "resizable": true
