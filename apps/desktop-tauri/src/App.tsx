@@ -23,7 +23,6 @@ export function App() {
         setAppState("ready")
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err)
-        console.error("App init failed:", msg)
         setPermissionError(msg)
         setAppState("denied")
       }
@@ -209,7 +208,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
       await loadWhisperModel(model)
       setCurrentModel(model)
     } catch (e) {
-      setError((e as Error).message)
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setModelLoading(false)
     }
@@ -322,6 +321,7 @@ function MeetingUI({ app }: { app: AppInstance }) {
           className={`record-btn ${isRecording ? "record-btn-stop" : "record-btn-start"}`}
           onClick={isRecording ? handleStop : handleStart}
           disabled={processing}
+          aria-label={isRecording ? "Stop" : "Start"}
         >
           {isRecording ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>

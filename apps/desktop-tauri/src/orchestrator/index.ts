@@ -60,8 +60,7 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
         const pending = pendingTranscriptions.get(meeting.id)
         const promise = deps.transcription
           .transcribeChunk(audioChunk)
-          .catch((err) => {
-            console.error("[orchestrator] transcribeChunk failed:", err)
+          .catch(() => {
             return null
           })
           .then((transcriptChunk) => {
@@ -83,8 +82,8 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
                   deps.storage.saveLiveNote(note)
                   deps.onLiveNote?.(note)
                 })
-                .catch((err) => {
-                  console.error("[orchestrator] generateLiveNote failed:", err)
+                .catch(() => {
+                  // live note generation failed — skip silently
                 })
             }
           })
@@ -135,13 +134,10 @@ export function createOrchestrator(deps: OrchestratorDeps): Orchestrator {
 
         deps.storage.saveTranscript(transcript)
 
-        console.log("[orchestrator] Generating AI summary for", transcript.fullText.length, "chars...")
         try {
           const summary = await deps.intelligence.generateSummary(transcript)
           deps.storage.saveSummary(summary)
-          console.log("[orchestrator] AI summary generated:", summary.title)
-        } catch (err) {
-          console.error("[orchestrator] AI summary failed:", err)
+        } catch {
           // Fall back: save a minimal summary so export still works
           const { v4: uuid } = await import("uuid")
           deps.storage.saveSummary({

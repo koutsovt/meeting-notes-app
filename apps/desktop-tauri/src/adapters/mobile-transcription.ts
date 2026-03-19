@@ -45,28 +45,19 @@ export function createMobileTranscriptionService(): {
       listening = true
 
       try {
-        console.log("[mobile-stt] Requesting permissions...")
         const perms = (await invoke("plugin:speech-recognizer|request_permissions")) as {
           microphone: string
           speechRecognition: string
         }
-        console.log("[mobile-stt] Permissions:", perms)
-
         if (perms.microphone !== "granted" || perms.speechRecognition !== "granted") {
-          console.error("[mobile-stt] Permissions not granted:", perms)
           listening = false
           return
         }
 
-        // Create a Channel for receiving results — the key fix
-        // Dynamic import to bypass TS resolution issue with Channel export
-        const core = await import("@tauri-apps/api/core")
-        const ChannelClass = (core as any).Channel
-        console.log("[mobile-stt] Channel class:", !!ChannelClass)
-        const onResult = new ChannelClass()
+        const { Channel } = await import("@tauri-apps/api/core")
+        const onResult = new Channel<RecognitionResult>()
         lastInterimText = ""
         onResult.onmessage = (result: RecognitionResult) => {
-          console.log("[mobile-stt] Got result:", JSON.stringify(result).substring(0, 100))
           const text = result.transcript?.trim()
 
           if (result.isFinal) {
@@ -86,7 +77,6 @@ export function createMobileTranscriptionService(): {
           }
         }
 
-        console.log("[mobile-stt] Starting speech recognizer...")
         await invoke("plugin:speech-recognizer|start", {
           onResult,
           config: {
@@ -95,9 +85,7 @@ export function createMobileTranscriptionService(): {
             continuous: true,
           },
         })
-        console.log("[mobile-stt] Speech recognizer started successfully")
-      } catch (err) {
-        console.error("[mobile-stt] Failed to start:", err)
+      } catch {
         listening = false
       }
     },
@@ -111,8 +99,8 @@ export function createMobileTranscriptionService(): {
       }
       try {
         await invoke("plugin:speech-recognizer|stop")
-      } catch (err) {
-        console.error("[mobile-stt] Failed to stop:", err)
+      } catch {
+        // stop failed silently
       }
       // Wait for final result to arrive from native side
       await new Promise((r) => setTimeout(r, 1500))
@@ -125,7 +113,6 @@ export function createMobileTranscriptionService(): {
         })
         lastInterimText = ""
       }
-      console.log("[mobile-stt] Stopped, buffer has", buffer.length, "results")
     },
 
     service: {

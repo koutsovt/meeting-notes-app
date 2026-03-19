@@ -10,6 +10,9 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost"
+    },
     "windows": [
       {
         "title": "Synolo",

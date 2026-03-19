@@ -78,7 +78,7 @@ describe("Orchestrator", () => {
     await expect(orchestrator.stopMeeting("nonexistent")).rejects.toThrow("Meeting nonexistent not found")
   })
 
-  it("sets meeting to failed when intelligence throws", async () => {
+  it("degrades gracefully with fallback summary when intelligence fails", async () => {
     vi.useRealTimers()
     const deps = makeDeps()
     const failingIntelligence: IntelligenceService = {
@@ -87,7 +87,16 @@ describe("Orchestrator", () => {
     const orchestrator = createOrchestrator({ ...deps, intelligence: failingIntelligence })
 
     const meeting = orchestrator.startMeeting("Failing Meeting")
-    await expect(orchestrator.stopMeeting(meeting.id)).rejects.toThrow("LLM unavailable")
+    await orchestrator.stopMeeting(meeting.id)
+
+    const saved = deps.storage.getMeeting(meeting.id)!
+    expect(saved.status).toBe("completed")
+
+    const summary = deps.storage.getSummary(meeting.id)!
+    expect(summary.title).toBe("Meeting Notes")
+    expect(summary.actionItems).toEqual([])
+    expect(summary.decisions).toEqual([])
+    expect(summary.keyPoints).toEqual([])
   })
 
   it("throws when starting a second meeting while capture is active", async () => {

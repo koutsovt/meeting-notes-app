@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { createSpeechBuffer } from "../adapters/speech-buffer.js"
 
 // Mock SpeechRecognition
@@ -16,6 +16,10 @@ class MockSpeechRecognition {
 
 beforeEach(() => {
   vi.stubGlobal("SpeechRecognition", MockSpeechRecognition)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
 })
 
 describe("SpeechBuffer", () => {

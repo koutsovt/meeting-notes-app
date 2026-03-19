@@ -4,6 +4,11 @@ target/
 *.log
 .DS_Store
 
+# Environment files
+.env
+.env.*
+.env.local
+
 # iOS build artifacts
 apps/desktop-tauri/src-tauri/gen/apple/build/
 apps/desktop-tauri/src-tauri/gen/apple/Externals/

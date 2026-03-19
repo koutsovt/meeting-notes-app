@@ -124,7 +124,6 @@ export function createSpeechBuffer(): SpeechBuffer {
 
       recognition = getSpeechRecognition()
       if (!recognition) {
-        console.warn("SpeechRecognition not available")
         return
       }
 

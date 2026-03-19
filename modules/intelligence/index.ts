@@ -131,7 +131,12 @@ export function createAIBackend(apiKey: string): SummaryBackend {
             .map((p) => p.text)
             .join("")
 
-      const parsed = JSON.parse(responseText)
+      let parsed;
+      try {
+        parsed = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Failed to parse AI response as JSON: ${responseText.substring(0, 200)}`);
+      }
 
       return {
         title: parsed.title ?? "Meeting Summary",

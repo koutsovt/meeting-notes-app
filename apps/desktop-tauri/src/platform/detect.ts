@@ -6,11 +6,19 @@
 
 export type Platform = "macos" | "ios" | "android" | "browser"
 
+/**
+ * Check if running inside Tauri.
+ * Mirrors the official @tauri-apps/api/core isTauri() implementation.
+ * Direct named import fails due to a TS declaration resolution bug with this package.
+ */
+function isTauri(): boolean {
+  return !!(globalThis as Record<string, unknown>).isTauri
+}
+
 export function detectPlatform(): Platform {
   if (typeof window === "undefined") return "browser"
 
-  const isTauri = "__TAURI_INTERNALS__" in window || "__TAURI__" in window
-  if (!isTauri) return "browser"
+  if (!isTauri()) return "browser"
 
   const ua = navigator.userAgent.toLowerCase()
 

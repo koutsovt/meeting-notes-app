@@ -10,6 +10,7 @@ pub type SharedCaptureState = Arc<Mutex<CaptureState>>;
 
 /// Audio chunk payload emitted to the frontend via Tauri events.
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AudioChunkEvent {
     pub id: String,
     pub meeting_id: String,
@@ -24,6 +25,7 @@ pub struct AudioChunkEvent {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StartCaptureArgs {
     pub meeting_id: String,
     pub source: String,

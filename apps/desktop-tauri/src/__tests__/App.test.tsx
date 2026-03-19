@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
 import { App } from "../App.js"
@@ -27,18 +27,22 @@ beforeEach(() => {
   })
 })
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe("App", () => {
   it("shows requesting state then renders app after permission granted", async () => {
     render(<App />)
-    expect(screen.getByText("Requesting...")).toBeInTheDocument()
+    expect(screen.getByText("Requesting microphone")).toBeInTheDocument()
 
     await waitFor(() => {
-      expect(screen.getByText("meeting notes")).toBeInTheDocument()
+      expect(screen.getByText("Synolo")).toBeInTheDocument()
       expect(screen.getByText("Granted")).toBeInTheDocument()
     })
   })
 
-  it("shows denied state when mic permission fails", async () => {
+  it("shows error when mic permission fails", async () => {
     vi.stubGlobal("navigator", {
       ...navigator,
       mediaDevices: {
@@ -49,35 +53,34 @@ describe("App", () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText("Denied")).toBeInTheDocument()
-      expect(screen.getByText(/Permission denied/)).toBeInTheDocument()
+      expect(screen.getByText("Permission denied")).toBeInTheDocument()
     })
   })
 
-  it("shows Start button after permission granted", async () => {
+  it("shows start button after permission granted", async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText("Start")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument()
     })
   })
 
-  it("switches to Stop button and Recording badge after starting", async () => {
+  it("switches to stop button and Recording status after starting", async () => {
     const user = userEvent.setup()
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText("Start")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText("Start"))
-    expect(screen.getByText("Stop")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /start/i }))
+    expect(screen.getByRole("button", { name: /stop/i })).toBeInTheDocument()
     expect(screen.getByText("Recording")).toBeInTheDocument()
   })
 
-  it("shows Idle status initially", async () => {
+  it("shows Ready status initially", async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText("Idle")).toBeInTheDocument()
+      expect(screen.getByText("Ready")).toBeInTheDocument()
     })
   })
 
@@ -91,8 +94,8 @@ describe("App", () => {
   it("shows live transcript panel after starting", async () => {
     const user = userEvent.setup()
     render(<App />)
-    await waitFor(() => expect(screen.getByText("Start")).toBeInTheDocument())
-    await user.click(screen.getByText("Start"))
+    await waitFor(() => expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument())
+    await user.click(screen.getByRole("button", { name: /start/i }))
     expect(screen.getByText("Live Transcript")).toBeInTheDocument()
     expect(screen.getByText("Listening...")).toBeInTheDocument()
   })
@@ -100,14 +103,15 @@ describe("App", () => {
   it("shows delete button on completed meetings", async () => {
     const user = userEvent.setup()
     render(<App />)
-    await waitFor(() => expect(screen.getByText("Start")).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument())
 
-    await user.click(screen.getByText("Start"))
-    await user.click(screen.getByText("Stop"))
+    await user.click(screen.getByRole("button", { name: /start/i }))
+    await user.click(screen.getByRole("button", { name: /stop/i }))
 
     await waitFor(() => {
-      const deleteButtons = screen.getAllByText("×")
-      expect(deleteButtons.length).toBeGreaterThan(0)
+      const svgButtons = screen.getAllByRole("button")
+      const deleteBtn = svgButtons.find((btn) => btn.classList.contains("btn-icon"))
+      expect(deleteBtn).toBeTruthy()
     })
   })
 

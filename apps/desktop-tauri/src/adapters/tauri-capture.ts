@@ -8,15 +8,15 @@ const CHUNK_DURATION_MS = 5000
 
 interface AudioChunkPayload {
   id: string
-  meeting_id: string
+  meetingId: string
   sequence: number
-  start_time_ms: number
-  end_time_ms: number
+  startTimeMs: number
+  endTimeMs: number
   source: string
-  sample_rate: number
-  channel_count: number
-  samples_base64: string
-  created_at: string
+  sampleRate: number
+  channelCount: number
+  samplesBase64: string
+  createdAt: string
 }
 
 /**
@@ -37,18 +37,18 @@ export function createTauriCaptureService(
 
       listen<AudioChunkPayload>("audio-chunk", (event) => {
         const payload = event.payload
-        const samples = base64ToFloat32(payload.samples_base64)
+        const samples = base64ToFloat32(payload.samplesBase64)
         const chunk: AudioChunk = {
           id: payload.id,
-          meetingId: payload.meeting_id,
+          meetingId: payload.meetingId,
           sequence: payload.sequence,
-          startTimeMs: payload.start_time_ms,
-          endTimeMs: payload.end_time_ms,
+          startTimeMs: payload.startTimeMs,
+          endTimeMs: payload.endTimeMs,
           source: payload.source as AudioChunk["source"],
           samples,
-          sampleRate: payload.sample_rate,
-          channelCount: payload.channel_count,
-          createdAt: payload.created_at,
+          sampleRate: payload.sampleRate,
+          channelCount: payload.channelCount,
+          createdAt: payload.createdAt,
         }
         try {
           onChunk(chunk)
@@ -60,18 +60,17 @@ export function createTauriCaptureService(
       })
 
       invoke("start_capture", {
-        args: { meeting_id: meetingId, source },
-      }).catch((err) => {
+        args: { meetingId, source },
+      }).catch(() => {
         capturing = false
-        throw new Error(`Failed to start capture: ${err}`)
       })
     },
 
     stop(): void {
       if (!capturing) throw new Error("Capture is not in progress")
 
-      invoke("stop_capture").catch((err) => {
-        throw new Error(`Failed to stop capture: ${err}`)
+      invoke("stop_capture").catch(() => {
+        // Error intentionally swallowed — sync interface cannot propagate async failures
       })
 
       if (unlisten) {

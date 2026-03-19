@@ -7,23 +7,23 @@ import type { TranscriptChunk, Transcript } from "@shared/types/transcript.js"
 interface RustTranscriptionResult {
   text: string
   confidence: number
-  segments: { text: string; start_ms: number; end_ms: number; confidence: number; no_speech_prob: number; speaker_turn_next: boolean; silence_before_next: boolean }[]
+  segments: { text: string; startMs: number; endMs: number; confidence: number; noSpeechProb: number; speakerTurnNext: boolean; silenceBeforeNext: boolean }[]
 }
 
 export interface TranscriptionConfig {
   strategy: "greedy" | "beam_search"
-  best_of: number
-  n_threads: number
+  bestOf: number
+  nThreads: number
   temperature: number
-  temperature_inc: number
-  entropy_thold: number
-  logprob_thold: number
-  no_speech_thold: number
+  temperatureInc: number
+  entropyThold: number
+  logprobThold: number
+  noSpeechThold: number
   language: string
-  initial_prompt: string
-  suppress_blank: boolean
-  suppress_nst: boolean
-  tdrz_enable: boolean
+  initialPrompt: string
+  suppressBlank: boolean
+  suppressNst: boolean
+  tdrzEnable: boolean
 }
 
 export async function setTranscriptionConfig(config: Partial<TranscriptionConfig>): Promise<void> {
@@ -102,7 +102,7 @@ export function createTauriTranscriptionService(): TranscriptionService {
 
           // Only use silence_before_next as the primary speaker change signal
           // tinydiarize and dash prefix are secondary
-          if (seg.speaker_turn_next || seg.silence_before_next) {
+          if (seg.speakerTurnNext || seg.silenceBeforeNext) {
             currentSpeaker++
             text += `\n[Speaker ${currentSpeaker + 1}]: `
           }

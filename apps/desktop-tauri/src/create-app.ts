@@ -55,8 +55,13 @@ export async function setApiKey(key: string): Promise<void> {
   }
 }
 
+/**
+ * Check if running inside Tauri.
+ * Mirrors the official @tauri-apps/api/core isTauri() implementation.
+ * Direct named import fails due to a TS declaration resolution bug with this package.
+ */
 export function isTauri(): boolean {
-  return typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+  return !!(globalThis as Record<string, unknown>).isTauri
 }
 
 /**
@@ -84,9 +89,7 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
   const storage = createMemoryStorageService()
   const platform = detectPlatform()
   const apiKey = await getApiKey()
-  console.log("[app] API key loaded:", apiKey ? `${apiKey.substring(0, 8)}...` : "(none)")
   const backend = apiKey ? createAIBackend(apiKey) : undefined
-  console.log("[app] AI backend:", backend ? "GLM" : "keyword-only")
   const intelligence = createIntelligenceService(backend)
 
   const app: App = {
@@ -107,9 +110,7 @@ export async function createApp(micStream: MediaStream | null): Promise<App> {
     const originalStart = mobileCapture.start.bind(mobileCapture)
     const originalStop = mobileCapture.stop.bind(mobileCapture)
     mobileCapture.start = (id, onChunk) => {
-      mobileStt.startListeningForMeeting().catch((err) => {
-        console.error("[mobile] STT start failed:", err)
-      })
+      mobileStt.startListeningForMeeting().catch(() => {})
       originalStart(id, onChunk)
     }
     mobileCapture.stop = () => {

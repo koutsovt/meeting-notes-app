@@ -22,6 +22,7 @@ impl WhisperModel {
 
 /// Runtime-configurable transcription parameters.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TranscriptionConfig {
     /// "greedy" or "beam_search"
     pub strategy: String,
@@ -73,6 +74,7 @@ impl Default for TranscriptionConfig {
 
 /// Result of transcribing an audio chunk.
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TranscriptionResult {
     pub text: String,
     pub confidence: f32,
@@ -80,6 +82,7 @@ pub struct TranscriptionResult {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TranscriptionSegment {
     pub text: String,
     pub start_ms: i64,
